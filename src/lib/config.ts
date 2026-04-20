@@ -1,0 +1,63 @@
+/// <reference types="vite/client" />
+
+// Runtime configuration
+let runtimeConfig: {
+  API_BASE_URL: string;
+} | null = null;
+
+// Configuration loading state
+let configLoading = true;
+
+// Default fallback configuration
+const defaultConfig = {
+  API_BASE_URL: 'http://127.0.0.1:8000',
+};
+
+export async function loadRuntimeConfig(): Promise<void> {
+  try {
+    const response = await fetch('/api/config');
+    if (response.ok) {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        runtimeConfig = await response.json();
+      }
+    }
+  } catch (error) {
+    // Silently fail and use default config
+  } finally {
+    configLoading = false;
+  }
+}
+
+export function getConfig() {
+  if (configLoading) {
+    return defaultConfig;
+  }
+
+  if (runtimeConfig) {
+    return runtimeConfig;
+  }
+
+  if (import.meta.env.VITE_API_BASE_URL) {
+    const viteConfig = {
+      API_BASE_URL: import.meta.env.VITE_API_BASE_URL as string,
+    };
+    return viteConfig;
+  }
+
+  return defaultConfig;
+}
+
+export function getAPIBaseURL(): string {
+  const baseURL = getConfig().API_BASE_URL;
+  if (baseURL === '/') {
+    return '';
+  }
+  return baseURL;
+}
+
+export const config = {
+  get API_BASE_URL() {
+    return getAPIBaseURL();
+  },
+};
