@@ -6,35 +6,56 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
+/**
+ * LoginPage Component
+ * Trang đăng nhập người dùng với form nhập email, tên, và mật khẩu.
+ * Hỗ trợ: validation, toggle password visibility, và error handling.
+ */
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
+  // Form state management
+  const [email, setEmail] = useState(''); // Email người dùng
+  const [password, setPassword] = useState(''); // Mật khẩu
+  const [name, setName] = useState(''); // Tên hiển thị
+  const [showPassword, setShowPassword] = useState(false); // Điều khiển hiển thị/ẩn mật khẩu
+  const [error, setError] = useState(''); // Thông báo lỗi
+  const [loading, setLoading] = useState(false); // Trạng thái loading khi đang xử lý
+
+  /**
+   * handleSubmit - Xử lý sự kiện submit form đăng nhập
+   * 
+   * Các bước:
+   * 1. Ngăn hành động mặc định của form
+   * 2. Reset lỗi trước đó và bật loading state
+   * 3. Validate dữ liệu đầu vào (email, password, name)
+   * 4. Gửi yêu cầu đăng nhập đến backend (hiện tại là mock)
+   * 5. Lưu thông tin user vào auth context
+   * 6. Redirect về trang chủ
+   * 7. Xử lý lỗi nếu có
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      // Validation
+      // Validation: Kiểm tra các field bắt buộc
       if (!email || !password || !name) {
         setError('Vui lòng điền email, tên và mật khẩu');
         setLoading(false);
         return;
       }
 
+      // Validation: Kiểm tra định dạng email
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         setError('Email không hợp lệ');
         setLoading(false);
         return;
       }
 
+      // Validation: Kiểm tra độ dài mật khẩu tối thiểu
       if (password.length < 6) {
         setError('Mật khẩu phải có ít nhất 6 ký tự');
         setLoading(false);
@@ -50,33 +71,35 @@ export default function LoginPage() {
 
       // Mock login - xóa khi có API thực
       console.log('Login attempt:', { email, password, name });
-      
-      // Simulate API call
+
+      // Simulate API call - chờ 1 giây để tạo hiệu ứng loading
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Save user to auth context
+
+      // Save user to auth context - lưu thông tin user vào context
       login(email, name);
-      
-      // Redirect to home after successful login
+
+      // Redirect to home after successful login - chuyển hướng về trang chủ sau đăng nhập thành công
       router.push('/');
     } catch (err) {
+      // Xử lý lỗi bất ngờ
       setError('Đã xảy ra lỗi, vui lòng thử lại');
       console.error(err);
     } finally {
+      // Tắt loading state dù thành công hay thất bại
       setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
-      {/* Background decoration */}
+      {/* Background Decoration - Thêm hiệu ứng background gradient blob để làm đẹp */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-green-50 rounded-full opacity-50 blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-green-50 rounded-full opacity-50 blur-3xl"></div>
       </div>
 
       <div className="relative w-full max-w-md">
-        {/* Back Button - HOME */}
+        {/* Back Button - Nút quay lại trang chủ */}
         <Link
           href="/"
           className="mb-4 inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 transition"
@@ -84,7 +107,7 @@ export default function LoginPage() {
           ← Quay về trang chủ
         </Link>
 
-        {/* Logo */}
+        {/* Logo Section - Tiêu đề và mô tả trang đăng nhập */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold tracking-[0.15em] text-[#2D5016] font-serif mb-2">
             HTDCHA
@@ -92,10 +115,11 @@ export default function LoginPage() {
           <p className="text-sm text-gray-600 tracking-wider">Đăng nhập vào tài khoản của bạn</p>
         </div>
 
-        {/* Login Card */}
+        {/* Login Card - Container chính chứa form đăng nhập */}
         <div className="bg-white rounded-lg shadow-lg p-8 border border-gray-100">
+          {/* Login Form - Form chính để nhập thông tin đăng nhập */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Field */}
+            {/* Email Input Field - Nhập email với validation trực tuyến */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wider">
                 Email
@@ -108,6 +132,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
+                    // Clear error khi user bắt đầu nhập lại
                     setError('');
                   }}
                   placeholder="your@email.com"
@@ -117,7 +142,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Name Field */}
+            {/* Name Input Field - Nhập tên hiển thị của user */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wider">
                 Tên hiển thị
@@ -128,6 +153,7 @@ export default function LoginPage() {
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
+                  // Clear error khi user bắt đầu nhập lại
                   setError('');
                 }}
                 placeholder="Nguyễn Văn A"
@@ -136,12 +162,13 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Password Field */}
+            {/* Password Input Field - Nhập mật khẩu với tùy chọn hiển thị/ẩn */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 uppercase tracking-wider">
                   Mật khẩu
                 </label>
+                {/* Link quên mật khẩu - chuyển đến trang reset password */}
                 <Link href="/auth/forgot-password" className="text-xs text-[#2D5016] hover:underline">
                   Quên mật khẩu?
                 </Link>
@@ -154,40 +181,44 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
+                    // Clear error khi user bắt đầu nhập lại
                     setError('');
                   }}
                   placeholder="••••••••"
                   className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D5016] focus:border-transparent transition-all"
                   disabled={loading}
                 />
+                {/* Toggle button - hiển thị/ẩn mật khẩu */}
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
                   tabIndex={-1}
+                  title={showPassword ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
 
-            {/* Error Message */}
+            {/* Error Message Display - Hiển thị thông báo lỗi nếu có */}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                 {error}
               </div>
             )}
 
-            {/* Submit Button */}
+            {/* Submit Button - Gửi form đăng nhập */}
             <button
               type="submit"
               disabled={loading}
               className="w-full bg-[#2D5016] text-white font-medium py-3 px-4 rounded-lg hover:bg-[#3a6b1e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm"
             >
+              {/* Hiển thị trạng thái loading hoặc text bình thường */}
               {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
             </button>
 
-            {/* Divider */}
+            {/* Divider - Phân cách giữa form đăng nhập và đăng nhập social */}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
@@ -197,7 +228,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Social Login Placeholder */}
+            {/* Social Login Button - Đăng nhập bằng Google (chưa implement) */}
             <button
               type="button"
               disabled={loading}
@@ -225,7 +256,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Sign Up Link */}
+          {/* Sign Up Redirect - Liên kết đến trang đăng ký cho user chưa có account */}
           <div className="mt-6 text-center">
             <p className="text-gray-600 text-sm">
               Chưa có tài khoản?{' '}
@@ -236,14 +267,14 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Info Box */}
+        {/* Info Box - Thông tin cho người test chức năng demo */}
         <div className="mt-8 bg-green-50 border border-green-200 rounded-lg p-4">
           <p className="text-sm text-gray-700">
             💡 <span className="font-medium">Dùng để test:</span> Demo account functionality. Đăng nhập thực tế sẽ được kết nối với backend.
           </p>
         </div>
 
-        {/* Back to Shopping */}
+        {/* Bypass Auth - Link cho phép user tiếp tục mua hàng mà không cần đăng nhập */}
         <div className="mt-6 text-center">
           <Link href="/products" className="text-sm text-[#2D5016] hover:underline font-medium">
             Tiếp tục mua sắm mà không đăng nhập
@@ -251,5 +282,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-  );
+);
 }

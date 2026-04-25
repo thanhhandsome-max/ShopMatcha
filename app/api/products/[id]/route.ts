@@ -16,7 +16,7 @@ export async function GET(
         price: 450000,
         rating: 4.5,
         reviews: 128,
-        image: 'https://images.unsplash.com/photo-1566758336962-b0e2e48a0d38?w=800',
+        image: '/images/products/kyotomatcha.webp',
         description: 'High-grade ceremonial matcha powder sourced from Japan',
         inStock: true,
         details: {
@@ -34,7 +34,7 @@ export async function GET(
         price: 250000,
         rating: 4.8,
         reviews: 95,
-        image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800',
+        image: '/images/products/matchaset.webp',
         description: 'Traditional bamboo whisk and bowl set',
         inStock: true,
         details: {
@@ -52,7 +52,7 @@ export async function GET(
         price: 180000,
         rating: 4.2,
         reviews: 76,
-        image: 'https://images.unsplash.com/photo-1599599810694-b5ac4dd0a494?w=800',
+        image: '/images/products/yuzusencha.webp',
         description: 'Quick and easy matcha latte mix',
         inStock: true,
         details: {
