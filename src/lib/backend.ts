@@ -21,7 +21,7 @@ interface BackendProductResponse {
   error?: string;
 }
 
-const API_BASE_PATH = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_PATH = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
 const mapCategory = (categoryName?: string): FrontendProduct['category'] => {
   const normalized = String(categoryName || '').toLowerCase();

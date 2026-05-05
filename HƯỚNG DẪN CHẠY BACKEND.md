@@ -2,9 +2,10 @@
 
 ## 📋 Tổng Quan Dự Án
 
-- **Frontend**: Next.js + React + Vite (cổng: 5173)
+- **Frontend**: Next.js 15 (cổng: 3000)
 - **Backend**: Express.js + TypeScript (cổng: 5000)
-- **Database**: MySQL (web_matcha)
+- **Database**: MySQL (matcha_shop)
+- **⚠️ Lưu ý**: Cần bật XAMPP (MySQL) trước khi chạy backend!
 
 ---
 
@@ -36,7 +37,14 @@ npm install
 
 ## 🚀 Cách 1: Chạy Backend & Frontend Cùng Một Lúc (Đơn Giản)
 
-### Bước 1: Mở Terminal 1 (Backend)
+### Bước 1: Khởi động MySQL qua XAMPP ⚠️
+
+1. Mở **XAMPP Control Panel**
+2. Nhấn nút **Start** bên cạnh **MySQL**
+3. Đợi MySQL chuyển sang màu xanh (Running)
+4. Kiểm tra MySQL chạy trên port **3306**
+
+### Bước 2: Mở Terminal 1 (Backend)
 
 ```bash
 cd c:\ShopMatcha\shopmatcha-backend
@@ -48,7 +56,7 @@ npm run dev
 Server is running on port 5000
 ```
 
-### Bước 2: Mở Terminal 2 (Frontend)
+### Bước 3: Mở Terminal 2 (Frontend)
 
 ```bash
 cd c:\ShopMatcha
@@ -57,97 +65,38 @@ npm run dev
 
 **Kết quả:**
 ```
-VITE v6.x.x  ready in xxx ms
-
-➜  Local:   http://localhost:5173/
-➜  press h + enter to show help
+▲ Next.js 15.x.x
+- Local:        http://localhost:3000
+- Ready in xxxms
 ```
 
-### Bước 3: Truy Cập Ứng Dụng
+### Bước 4: Truy Cập Ứng Dụng
 
-Mở trình duyệt và vào: **http://localhost:5173**
+Mở trình duyệt và vào: **http://localhost:3000**
 
----
-
-## 🎯 Cách 2: Sử Dụng Concurrently (Chạy Cùng Một Terminal)
-
-### Cài đặt Concurrently
-
-```bash
-cd c:\ShopMatcha
-npm install --save-dev concurrently
-```
-
-### Thêm Script vào `package.json`
-
-Mở file `c:\ShopMatcha\package.json` và thêm vào phần `scripts`:
-
-```json
-"scripts": {
-  "dev": "vite",
-  "dev:full": "concurrently \"cd shopmatcha-backend && npm run dev\" \"npm run dev\"",
-  "build": "tsc -b && vite build",
-  "lint": "eslint .",
-  "preview": "vite preview"
-}
-```
-
-### Chạy cả hai cùng lúc
-
-```bash
-cd c:\ShopMatcha
-npm run dev:full
-```
-
----
-
-## 🔧 Cách 3: Sử Dụng Batch Script (Windows)
-
-Tạo file `c:\ShopMatcha\start-dev.bat`:
-
-```batch
-@echo off
-echo Starting Shop Matcha Development Environment...
-echo.
-
-start cmd /k "cd /d c:\ShopMatcha\shopmatcha-backend && npm run dev"
-echo [✓] Backend started on http://localhost:5000
-
-timeout /t 3 /nobreak
-echo.
-
-start cmd /k "cd /d c:\ShopMatcha && npm run dev"
-echo [✓] Frontend started on http://localhost:5173
-
-echo.
-echo [✓] Open browser: http://localhost:5173
-pause
-```
-
-**Chạy:**
-```bash
-c:\ShopMatcha\start-dev.bat
-```
-
----
+---------------
 
 ## 📁 Cấu Hình Các Biến Môi Trường
 
-### Frontend (c:\ShopMatcha\.env)
+### Frontend (c:\ShopMatcha\.env.local)
 ```env
-VITE_API_BASE_URL=http://localhost:5000/api
+NEXT_PUBLIC_API_BASE_URL=/api
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
-CORS_ORIGIN=http://localhost:5173
 ```
 
 ### Backend (c:\ShopMatcha\shopmatcha-backend\.env)
 ```env
 NODE_ENV=development
 PORT=5000
-DATABASE_URL=mysql://root:@localhost:3306/web_matcha
-CORS_ORIGIN=http://localhost:5173,http://localhost:3000
+DATABASE_URL=mysql://root:@localhost:3306/matcha_shop
+CORS_ORIGIN=http://localhost:3000
 LOG_LEVEL=debug
 ```
+
+**⚠️ Lưu ý XAMPP:**
+- Đảm bảo MySQL đang chạy trên port 3306 trong XAMPP
+- Database name: `matcha_shop` (không phải `web_matcha`)
+- Username: `root`, Password: (để trống)
 
 ---
 
@@ -156,16 +105,13 @@ LOG_LEVEL=debug
 ### Danh sách sản phẩm
 ```
 GET http://localhost:5000/api/products
+hoặc qua Next.js proxy: http://localhost:3000/api/products
 ```
 
 ### Chi tiết sản phẩm
 ```
 GET http://localhost:5000/api/products/:id
-```
-
-### Sản phẩm liên quan
-```
-GET http://localhost:5000/api/products/:id/related
+hoặc qua Next.js proxy: http://localhost:3000/api/products/:id
 ```
 
 ### Danh mục
@@ -178,37 +124,40 @@ GET http://localhost:5000/api/categories
 GET http://localhost:5000/api/search?query=matcha
 ```
 
-### Khuyến mãi
-```
-GET http://localhost:5000/api/promotions
-```
-
 ### Health Check
 ```
 GET http://localhost:5000/api/health
 GET http://localhost:5000/health
 ```
 
+**💡 Lưu ý**: Frontend (Next.js) sẽ tự động proxy các request `/api/*` đến backend port 5000
+
 ---
 
-## 🗄️ Cài đặt Database
+## 🗄️ Cài đặt Database (Sử dụng XAMPP MySQL)
 
-### Nếu chưa có database
+### ⚠️ Bước quan trọng: Bật XAMPP trước!
 
-1. **Tạo database:**
-```sql
-CREATE DATABASE web_matcha CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
+1. Mở **XAMPP Control Panel**
+2. Nhấn **Start** bên cạnh **MySQL**
+3. Kiểm tra MySQL đang chạy trên port **3306**
 
-2. **Chạy migration:**
+### Tạo database
+
+1. **Mở phpMyAdmin**: http://localhost/phpmyadmin
+2. Import file database SQL
+
+3. **Chạy migration:**
 ```bash
 cd c:\ShopMatcha\shopmatcha-backend
 npx prisma db push
 ```
 
-3. **Seed dữ liệu (nếu có):**
+4. **Kiểm tra kết nối:**
 ```bash
-npx prisma db seed
+mysql -u root -p
+# Nhập password (để trống nếu chưa đặt)
+SHOW DATABASES;
 ```
 
 ---
@@ -220,29 +169,54 @@ npx prisma db seed
 │   Khởi chạy Ứng dụng Shop Matcha       │
 └─────────────────────────────────────────┘
            ↓
+   ┌──────────────────────────┐
+   │ 1. Bật XAMPP MySQL      │
+   │   (Port 3306)           │
+   └──────────────────────────┘
+           ↓
    ┌───────────────────┐
-   │ Cài Dependencies  │
+   │ 2. Cài Dependencies│
    │ npm install       │
    └───────────────────┘
            ↓
-   ┌──────────────────────┐
-   │ Terminal 1: Backend  │──→ http://localhost:5000
-   │ npm run dev          │
-   └──────────────────────┘
+   ┌──────────────────────────┐
+   │ Terminal 1: Backend       │──→ http://localhost:5000
+   │ cd shopmatcha-backend     │
+   │ npm run dev               │
+   └──────────────────────────┘
            ↓
-   ┌──────────────────────┐
-   │ Terminal 2: Frontend │──→ http://localhost:5173
-   │ npm run dev          │
-   └──────────────────────┘
+   ┌──────────────────────────┐
+   │ Terminal 2: Frontend      │──→ http://localhost:3000
+   │ npm run dev               │
+   └──────────────────────────┘
            ↓
-   ┌─────────────────────────┐
-   │ Mở: http://localhost:5173 │
-   └─────────────────────────┘
+   ┌─────────────────────────────┐
+   │ 3. Mở trình duyệt:          │
+   │    http://localhost:3000     │
+   └─────────────────────────────┘
 ```
 
 ---
 
 ## 🛠️ Troubleshooting
+
+### ⚠️ Lỗi thường gặp với XAMPP
+
+**MySQL không khởi động được:**
+1. Mở XAMPP Control Panel
+2. Nhấn **Config** bên cạnh MySQL
+3. Kiểm tra port là **3306**
+4. Nếu port 3306 bị chiếm, đổi sang port khác và cập nhật trong `.env`
+
+**Không kết nối được database:**
+```bash
+# Kiểm tra MySQL có đang chạy không
+netstat -ano | findstr :3306
+
+# Thử kết nối manual
+mysql -u root -p
+# Password: (để trống)
+```
 
 ### Port 5000 đã sử dụng
 
@@ -256,45 +230,44 @@ netstat -ano | findstr :5000
 taskkill /PID [PID] /F
 ```
 
-Hoặc thay đổi port trong `.env`:
+Hoặc thay đổi port trong `shopmatcha-backend/.env`:
 ```env
 PORT=5001
 ```
 
-### Port 5173 đã sử dụng
+### Port 3000 đã sử dụng (Next.js)
 
-Vite sẽ tự động chuyển sang port khác (5174, 5175...).
-
-### MySQL không kết nối
-
-Kiểm tra MySQL service:
-```bash
-mysql -u root -p
-```
-
-Hoặc chạy MySQL Server nếu dùng Docker:
-```bash
-docker run --name mysql -e MYSQL_ROOT_PASSWORD=password -p 3306:3306 mysql:8
-```
+Next.js sẽ tự động chuyển sang port khác (3001, 3002...).
 
 ### CORS errors
 
-Kiểm tra `CORS_ORIGIN` trong `shopmatcha-backend/.env` khớp với frontend URL.
+Kiểm tra `CORS_ORIGIN` trong `shopmatcha-backend/.env`:
+```env
+CORS_ORIGIN=http://localhost:3000
+```
+
+### Backend không kết nối được
+
+1. Kiểm tra backend có đang chạy không: http://localhost:5000/api/health
+2. Kiểm tra MySQL đã bật trong XAMPP chưa
+3. Xem log lỗi trong terminal backend
 
 ---
 
 ## 📦 Build & Deployment
 
-### Build Frontend
+### Build Frontend (Next.js)
 ```bash
 cd c:\ShopMatcha
 npm run build
+# Output: .next/ folder
 ```
 
 ### Build Backend
 ```bash
 cd c:\ShopMatcha\shopmatcha-backend
 npm run build
+# Output: dist/ folder
 ```
 
 ### Chạy Production
@@ -303,35 +276,41 @@ npm run build
 ```bash
 cd c:\ShopMatcha\shopmatcha-backend
 npm run start
+# Chạy trên port 5000
 ```
 
-**Frontend (Preview):**
+**Frontend (Next.js Production):**
 ```bash
 cd c:\ShopMatcha
-npm run preview
+npm start
+# Chạy trên port 3000
 ```
+
+**⚠️ Lưu ý**: Production vẫn cần XAMPP MySQL đang chạy!
 
 ---
 
-## 📝 Ghi Chú
+## 📝 Ghi Chú Quan Trọng
 
-- **Frontend Port**: 5173 (Vite dev server)
+- **Frontend Port**: 3000 (Next.js dev server)
 - **Backend Port**: 5000 (Express server)
-- **Database**: MySQL tại `localhost:3306`
+- **Database**: MySQL tại `localhost:3306` (Quản lý qua XAMPP)
 - **Hot Reload**: Cả Frontend và Backend đều hỗ trợ hot reload
-- **CORS**: Đã cấu hình để cho phép cross-origin requests
+- **CORS**: Đã cấu hình `CORS_ORIGIN=http://localhost:3000`
+- **⚠️ Bắt buộc**: Phải bật XAMPP MySQL trước khi chạy backend!
 
 ---
 
 ## 🎉 Bạn Đã Sẵn Sàng!
 
 Bây giờ hãy:
-1. ✅ Mở Terminal 1 và chạy backend
-2. ✅ Mở Terminal 2 và chạy frontend  
-3. ✅ Truy cập http://localhost:5173
-4. ✅ Thưởng thức ứng dụng!
+1. ✅ Mở **XAMPP Control Panel** và bật **MySQL**
+2. ✅ Mở Terminal 1 và chạy backend (port 5000)
+3. ✅ Mở Terminal 2 và chạy frontend (port 3000)  
+4. ✅ Truy cập **http://localhost:3000**
+5. ✅ Thưởng thức ứng dụng! 🍵
 
 ---
 
-**Tạo lúc**: 5 tháng 5, 2026  
-**Phiên bản**: 1.0.0
+**Cập nhật**: 5 tháng 5, 2026  
+**Phiên bản**: 2.0.0 (Đã cập nhật port Next.js)

@@ -1,5 +1,3 @@
-/// <reference types="vite/client" />
-
 // Runtime configuration
 let runtimeConfig: {
   API_BASE_URL: string;
@@ -38,11 +36,11 @@ export function getConfig() {
     return runtimeConfig;
   }
 
-  if (import.meta.env.VITE_API_BASE_URL) {
-    const viteConfig = {
-      API_BASE_URL: import.meta.env.VITE_API_BASE_URL as string,
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    const nextConfig = {
+      API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
     };
-    return viteConfig;
+    return nextConfig;
   }
 
   return defaultConfig;
