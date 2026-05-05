@@ -7,7 +7,7 @@ import {
     FrontendProduct,
     fetchProductById,
     fetchRelatedProducts,
-    mapBackendProduct,
+    mapBackendProduct
 } from "@/lib/backend";
 import { formatMoneyVND, useCart } from "@/store/useCart";
 import { ChevronRight, Minus, Plus, RotateCcw, Shield, ShoppingBag, Truck } from "lucide-react";
@@ -25,16 +25,32 @@ export default function ProductDetail() {
   const [added, setAdded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [stockError, setStockError] = useState<string | null>(null);
+  const [availableStock, setAvailableStock] = useState<number | null>(null);
   const addItem = useCart((s) => s.addItem);
+  const checkItemStock = useCart((s) => s.checkItemStock);
 
   useEffect(() => {
     const loadProduct = async () => {
       setLoading(true);
       setError(null);
+      setStockError(null);
+      setAvailableStock(null);
 
       try {
         const productData = await fetchProductById(id);
-        setProduct(mapBackendProduct(productData));
+        const mappedProduct = mapBackendProduct(productData);
+        setProduct(mappedProduct);
+
+        // Kiểm tra tồn kho
+        if (mappedProduct.id) {
+          const stockInfo = await checkProductStock(mappedProduct.id);
+          setAvailableStock(stockInfo.totalStock);
+          
+          if (!stockInfo.inStock) {
+            setStockError('Sản phẩm hiện đã hết hàng');
+          }
+        }
 
         const relatedData = await fetchRelatedProducts(id);
         setRelatedProducts(relatedData.map(mapBackendProduct));
@@ -50,12 +66,14 @@ export default function ProductDetail() {
     }
   }, [id]);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product) {
       return;
     }
 
-    addItem(
+    setStockError(null);
+    
+    const result = await addItem(
       {
         productId: product.id,
         name: product.name,
@@ -64,8 +82,18 @@ export default function ProductDetail() {
       },
       quantity
     );
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
+    
+    if (result.success) {
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2000);
+    } else {
+      setStockError(result.message);
+      // Cập nhật lại available stock nếu có
+      if (product?.id) {
+        const stockInfo = await checkProductStock(product.id);
+        setAvailableStock(stockInfo.totalStock);
+      }
+    }
   };
 
   if (loading) {
@@ -185,7 +213,7 @@ export default function ProductDetail() {
               <div className="flex items-center gap-2">
                 <span className="text-gray-500 w-24">Tình trạng:</span>
                 <span className={product.inStock ? "text-green-600" : "text-red-500"}>
-                  {product.inStock ? "Còn hàng" : "Hết hàng"}
+                  {product.inStock ? `Còn hàng (${availableStock !== null ? availableStock : '...'} sản phẩm)` : "Hết hàng"}
                 </span>
               </div>
             </div>
@@ -204,8 +232,9 @@ export default function ProductDetail() {
                   {quantity}
                 </span>
                 <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="p-3 hover:bg-gray-50 transition-colors"
+                  onClick={() => setQuantity(availableStock !== null ? Math.min(quantity + 1, availableStock) : quantity + 1)}
+                  disabled={availableStock !== null && quantity >= availableStock}
+                  className="p-3 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Tăng"
                 >
                   <Plus size={14} />
@@ -213,11 +242,11 @@ export default function ProductDetail() {
               </div>
               <button
                 onClick={handleAddToCart}
-                disabled={!product.inStock}
+                disabled={!product.inStock || availableStock === 0}
                 className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-xs tracking-[0.15em] font-semibold transition-all ${
                   added
                     ? "bg-green-600 text-white"
-                    : product.inStock
+                    : product.inStock && availableStock !== 0
                     ? "bg-[#2D5016] text-white hover:bg-[#3a6b1e]"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
@@ -226,6 +255,14 @@ export default function ProductDetail() {
                 {added ? "ĐÃ THÊM VÀO GIỎ ✓" : "THÊM VÀO GIỎ HÀNG"}
               </button>
             </div>
+            
+            {/* Stock Error Message */}
+            {stockError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center gap-2">
+                <AlertCircle size={16} className="text-red-600 flex-shrink-0" />
+                <p className="text-sm text-red-600">{stockError}</p>
+              </div>
+            )}
 
             {/* Trust Badges */}
             <div className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-200">

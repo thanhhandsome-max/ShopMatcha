@@ -83,7 +83,38 @@ export async function createOrderHandler(req: Request, res: Response): Promise<v
     if (result.success) {
       res.status(201).json(result);
     } else {
-      res.status(400).json(result);
+      // Check if it's a stock-related error
+      if (result.message && result.message.includes('không đủ số lượng')) {
+        // Try to extract product info for better error reporting
+        const outOfStockItems = [];
+        for (const item of items) {
+          const product = await prisma.sanpham.findUnique({
+            where: { MaSP: item.productId || item.MaSP }
+          });
+          const stock = await prisma.tonkhocuahang.findFirst({
+            where: { 
+              MaSP: item.productId || item.MaSP, 
+              MaCH: MaCH 
+            }
+          });
+          if (product && stock && stock.SoLuong < item.quantity) {
+            outOfStockItems.push({
+              MaSP: item.productId || item.MaSP,
+              TenSP: product.TenSP,
+              requested: item.quantity,
+              available: stock.SoLuong
+            });
+          }
+        }
+        
+        res.status(400).json({
+          success: false,
+          message: result.message,
+          outOfStockItems: outOfStockItems.length > 0 ? outOfStockItems : undefined
+        });
+      } else {
+        res.status(400).json(result);
+      }
     }
   } catch (error) {
     console.error('Create order error:', error);

@@ -134,3 +134,38 @@ export const searchProducts = async (query: string, limit = 20) => {
   const response = await fetch(getApiUrl(`/search?${params.toString()}`));
   return handleResponse<{ query: string; results: any[]; count: number }>(response);
 };
+
+export interface ProductStockInfo {
+  productId: string;
+  totalStock: number;
+  inStock: boolean;
+}
+
+export const checkProductStock = async (productId: string): Promise<ProductStockInfo> => {
+  try {
+    const response = await fetch(getApiUrl(`/products/${productId}`));
+    const data = await handleResponse<any>(response);
+    
+    const totalStock = data.totalStock || 0;
+    
+    return {
+      productId,
+      totalStock,
+      inStock: totalStock > 0
+    };
+  } catch (error) {
+    console.error('Error checking product stock:', error);
+    return {
+      productId,
+      totalStock: 0,
+      inStock: false
+    };
+  }
+};
+
+export const checkMultipleProductsStock = async (productIds: string[]): Promise<ProductStockInfo[]> => {
+  const results = await Promise.all(
+    productIds.map(id => checkProductStock(id))
+  );
+  return results;
+};

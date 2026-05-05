@@ -2,19 +2,21 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { formatMoneyVND, useCart } from '@/store/useCart';
-import { Check } from 'lucide-react';
+import { Check, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, totalPrice, clear } = useCart();
+  const { items, totalPrice, clear, removeItem } = useCart();
   const { isLoggedIn, isLoading } = useAuth();
   
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [checkingStock, setCheckingStock] = useState(false);
+  const [stockErrors, setStockErrors] = useState<{productId: string, message: string}[]>([]);
 
   // Contact Info
   const [email, setEmail] = useState('');
@@ -49,6 +51,45 @@ export default function CheckoutPage() {
     }
   }, [isLoggedIn, isLoading, router]);
 
+  const checkCartStock = async () => {
+    setCheckingStock(true);
+    setStockErrors([]);
+    
+    try {
+      const { checkMultipleProductsStock } = await import('@/lib/backend');
+      const productIds = items.map(item => item.productId);
+      const stockInfos = await checkMultipleProductsStock(productIds);
+      
+      const errors: {productId: string, message: string}[] = [];
+      
+      items.forEach(item => {
+        const stockInfo = stockInfos.find(s => s.productId === item.productId);
+        if (stockInfo) {
+          if (!stockInfo.inStock || stockInfo.totalStock <= 0) {
+            errors.push({
+              productId: item.productId,
+              message: `Sản phẩm "${item.name}" đã hết hàng`
+            });
+          } else if (item.quantity > stockInfo.totalStock) {
+            errors.push({
+              productId: item.productId,
+              message: `Sản phẩm "${item.name}" chỉ còn ${stockInfo.totalStock} trong kho (bạn đã chọn ${item.quantity})`
+            });
+          }
+        }
+      });
+      
+      setStockErrors(errors);
+      return errors.length === 0;
+    } catch (error) {
+      console.error('Error checking stock:', error);
+      setStockErrors([{ productId: '', message: 'Lỗi kiểm tra tồn kho' }]);
+      return false;
+    } finally {
+      setCheckingStock(false);
+    }
+  };
+
   const handleSubmitContact = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !phone) {
@@ -82,6 +123,15 @@ export default function CheckoutPage() {
     }
 
     setError('');
+    
+    // Kiểm tra tồn kho trước khi thanh toán
+    const stockOk = await checkCartStock();
+    if (!stockOk) {
+      setError('Một số sản phẩm trong giỏ hàng không đủ hàng. Vui lòng cập nhật lại.');
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -142,7 +192,17 @@ export default function CheckoutPage() {
         clear();
         router.push(`/order-confirmation?orderId=${data.data.MaDH}&status=success`);
       } else {
-        setError(data.message || 'Tạo đơn hàng thất bại');
+        // Handle stock errors from backend
+        if (data.outOfStockItems && data.outOfStockItems.length > 0) {
+          const errors = data.outOfStockItems.map((item: any) => ({
+            productId: item.MaSP,
+            message: `Sản phẩm "${item.TenSP}" chỉ còn ${item.available} trong kho (bạn đặt ${item.requested})`
+          }));
+          setStockErrors(errors);
+          setError('Một số sản phẩm không đủ hàng. Vui lòng cập nhật lại giỏ hàng.');
+        } else {
+          setError(data.message || 'Tạo đơn hàng thất bại');
+        }
       }
     } catch (err) {
       console.error('Payment error:', err);
@@ -488,7 +548,7 @@ export default function CheckoutPage() {
                             setError('');
                           }}
                           placeholder="4532 1234 5678 9010"
-                          maxLength="19"
+                          maxLength={19}
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D5016] font-mono"
                         />
                       </div>
@@ -522,7 +582,7 @@ export default function CheckoutPage() {
                               setError('');
                             }}
                             placeholder="MM/YY"
-                            maxLength="5"
+                            maxLength={5}
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D5016]"
                           />
                         </div>
@@ -536,7 +596,7 @@ export default function CheckoutPage() {
                               setError('');
                             }}
                             placeholder="123"
-                            maxLength="3"
+                            maxLength={3}
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D5016]"
                           />
                         </div>
@@ -572,24 +632,55 @@ export default function CheckoutPage() {
             <div className="bg-white rounded-lg shadow p-6 sticky top-20">
               <h3 className="text-lg font-semibold mb-6 uppercase tracking-wider">Đơn hàng của bạn</h3>
               
-              <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
-                {items.map((item) => (
-                  <div key={item.productId} className="flex gap-4 pb-4 border-b border-gray-100">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-16 h-16 object-cover bg-gray-100 rounded"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 line-clamp-2">{item.name}</p>
-                      <p className="text-xs text-gray-500 mt-1">x{item.quantity}</p>
-                      <p className="text-sm font-medium text-gray-900 mt-1">
-                        {formatMoneyVND(item.price * item.quantity)}
-                      </p>
+              {/* Stock Error Messages */}
+              {stockErrors.length > 0 && (
+                <div className="mb-4 space-y-2">
+                  {stockErrors.map((err, idx) => (
+                    <div key={idx} className="p-3 bg-red-50 border border-red-200 rounded-md">
+                      <p className="text-sm text-red-600">{err.message}</p>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              )}
+              
+              <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
+                {items.map((item) => {
+                  const hasError = stockErrors.some(e => e.productId === item.productId);
+                  return (
+                    <div key={item.productId} className={`flex gap-4 pb-4 border-b ${hasError ? 'border-red-200 bg-red-50 -mx-2 px-2 rounded' : 'border-gray-100'}`}>
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-16 h-16 object-cover bg-gray-100 rounded"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 line-clamp-2">{item.name}</p>
+                        <p className="text-xs text-gray-500 mt-1">x{item.quantity}</p>
+                        <p className="text-sm font-medium text-gray-900 mt-1">
+                          {formatMoneyVND(item.price * item.quantity)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => removeItem(item.productId)}
+                        className="self-start text-red-500 hover:text-red-700 transition-colors p-1"
+                        aria-label={`Xóa ${item.name}`}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
+              
+              {/* Update Cart Button */}
+              <button
+                type="button"
+                onClick={checkCartStock}
+                disabled={checkingStock}
+                className="w-full mb-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                {checkingStock ? 'Đang kiểm tra...' : 'Cập nhật giỏ hàng'}
+              </button>
 
               <div className="border-t space-y-3 pt-4">
                 <div className="flex justify-between text-sm">
