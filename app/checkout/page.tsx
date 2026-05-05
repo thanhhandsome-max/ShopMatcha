@@ -71,8 +71,6 @@ export default function CheckoutPage() {
     window.scrollTo(0, 0);
   };
 
-  const { isLoggedIn, user } = useAuth();
-  
   const handleSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     

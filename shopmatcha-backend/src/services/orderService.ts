@@ -175,8 +175,7 @@ export async function getOrderById(maDH: string, maKH?: string): Promise<any> {
           }
         },
         khachhang: true,
-        taikhoan: true,
-        address: true
+        taikhoan: true
       }
     });
     
