@@ -1,11 +1,105 @@
 'use client';
 
+import { Check, Loader2, Mail, Package, Truck } from 'lucide-react';
 import Link from 'next/link';
-import { Check, Mail, Truck, Package } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function OrderConfirmationPage() {
-  const orderNumber = 'HT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-  
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [orderData, setOrderData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const status = searchParams.get('status');
+  const orderId = searchParams.get('orderId');
+  const message = searchParams.get('message');
+
+  useEffect(() => {
+    if (status === 'success' && orderId) {
+      // Fetch order details from API
+      fetch(`http://localhost:5000/api/orders/${orderId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('htdcha-token')}`
+        }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setOrderData(data.data);
+          } else {
+            setError(data.message || 'Không tìm thấy đơn hàng');
+          }
+        })
+        .catch(err => {
+          console.error('Fetch order error:', err);
+          setError('Lỗi kết nối server');
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
+  }, [status, orderId]);
+
+  // Show loading
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-[#2D5016] mx-auto mb-4" />
+          <p className="text-gray-600">Đang tải thông tin đơn hàng...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if payment failed
+  if (status === 'failed' || status === 'error') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50">
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <h1 className="text-2xl font-bold tracking-[0.15em] text-[#2D5016] font-serif">HTDCHA</h1>
+          </div>
+        </div>
+
+        <div className="max-w-2xl mx-auto px-4 py-12">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-100 mb-6">
+              <Package className="text-red-600" size={40} strokeWidth={3} />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Thanh toán thất bại</h1>
+            <p className="text-gray-600">{message || 'Đã xảy ra lỗi khi thanh toán'}</p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-lg p-8 mb-6 text-center">
+            <p className="text-gray-600 mb-6">Vui lòng thử lại hoặc chọn phương thức thanh toán khác.</p>
+            <div className="space-y-3">
+              <Link
+                href="/checkout"
+                className="block w-full bg-[#2D5016] text-white py-3 rounded-lg hover:bg-[#3a6b1e] transition font-medium uppercase tracking-wider"
+              >
+                Thử lại thanh toán
+              </Link>
+              <Link
+                href="/cart"
+                className="block w-full border border-gray-300 text-gray-900 py-3 rounded-lg hover:bg-gray-50 transition font-medium uppercase tracking-wider"
+              >
+                Quay lại giỏ hàng
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Generate random order number if no API data
+  const orderNumber = orderData?.MaDH || orderData?.order_code || 'HT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
       {/* Header */}
@@ -71,7 +165,7 @@ export default function OrderConfirmationPage() {
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">Đang vận chuyển</h3>
-                <p className="text-sm text-gray-600 mt-1">Bạn sẽ được thông báo khi hàng được giao</p>
+                <p className="text-sm text-gray-600 mt-1">Bạn sẽ nhận được thông báo khi hàng được giao</p>
               </div>
             </div>
           </div>
@@ -104,23 +198,27 @@ export default function OrderConfirmationPage() {
         </div>
 
         {/* Order Summary */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Chi tiết đơn hàng</h3>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Tạm tính</span>
-              <span className="font-medium">695.000 ₫</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Vận chuyển</span>
-              <span className="font-medium">Miễn phí</span>
-            </div>
-            <div className="border-t border-gray-200 pt-3 flex justify-between">
-              <span className="font-semibold">Tổng cộng</span>
-              <span className="font-bold text-lg">695.000 ₫</span>
+        {orderData && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h3 className="font-semibold text-gray-900 mb-4">Chi tiết đơn hàng</h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Tổng tiền</span>
+                <span className="font-medium">{orderData.TongTien?.toLocaleString()} ₫</span>
+              </div>
+              {orderData.shipping_fee > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Vận chuyển</span>
+                  <span className="font-medium">{orderData.shipping_fee?.toLocaleString()} ₫</span>
+                </div>
+              )}
+              <div className="border-t border-gray-200 pt-3 flex justify-between">
+                <span className="font-semibold">Tổng cộng</span>
+                <span className="font-bold text-lg">{orderData.TongTien?.toLocaleString()} ₫</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Actions */}
         <div className="space-y-3">

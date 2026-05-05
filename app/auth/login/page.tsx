@@ -1,17 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { useState } from 'react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,8 +22,8 @@ export default function LoginPage() {
 
     try {
       // Validation
-      if (!email || !password || !name) {
-        setError('Vui lòng điền email, tên và mật khẩu');
+      if (!email || !password) {
+        setError('Vui lòng điền email và mật khẩu');
         setLoading(false);
         return;
       }
@@ -41,24 +40,15 @@ export default function LoginPage() {
         return;
       }
 
-      // TODO: Kết nối API đăng nhập thực tế
-      // const response = await fetch('/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, password }),
-      // });
-
-      // Mock login - xóa khi có API thực
-      console.log('Login attempt:', { email, password, name });
+      // Call API login
+      const result = await login(email, password);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Save user to auth context
-      login(email, name);
-      
-      // Redirect to home after successful login
-      router.push('/');
+      if (result.success) {
+        // Redirect to home after successful login
+        router.push('/');
+      } else {
+        setError(result.message);
+      }
     } catch (err) {
       setError('Đã xảy ra lỗi, vui lòng thử lại');
       console.error(err);

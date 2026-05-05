@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { useState } from 'react';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -19,6 +19,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
 
+  const { register } = useAuth();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -62,17 +63,15 @@ export default function RegisterPage() {
         return;
       }
 
-      // TODO: Kết nối API đăng ký thực tế
-      console.log('Register attempt:', { name, email, password });
+      // Call API register
+      const result = await register(email, password, name);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Save user to auth context
-      login(email, name);
-      
-      // Redirect to home after successful registration
-      router.push('/');
+      if (result.success) {
+        // Redirect to home after successful registration
+        router.push('/');
+      } else {
+        setError(result.message);
+      }
     } catch (err) {
       setError('Đã xảy ra lỗi, vui lòng thử lại');
       console.error(err);

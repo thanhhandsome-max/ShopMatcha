@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { formatMoneyVND, useCart } from '@/store/useCart';
+import { Check } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCart, formatMoneyVND } from '@/store/useCart';
-import { useAuth } from '@/contexts/AuthContext';
-import { ChevronDown, Check } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -71,6 +71,8 @@ export default function CheckoutPage() {
     window.scrollTo(0, 0);
   };
 
+  const { isLoggedIn, user } = useAuth();
+  
   const handleSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -85,13 +87,67 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Clear cart and redirect
-      clear();
-      router.push('/order-confirmation');
+      // Prepare order data
+      const orderData = {
+        items: items.map(item => ({
+          productId: item.productId,
+          MaSP: item.productId,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        MaCH: 'CH01', // Default store - should be selected by user
+        payment_method: paymentMethod === 'card' ? 'BankTransfer' : 
+                        paymentMethod === 'paypal' ? 'VNPay' : 'COD',
+        address_id: '', // Should be collected from shipping form
+        customer_note: `Payment via ${paymentMethod}`,
+        shipping_fee: shippingCost
+      };
+
+      // Call API to create order
+      const response = await fetch('http://localhost:5000/api/orders', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('htdcha-token')}`
+        },
+        body: JSON.stringify(orderData)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // If VNPay payment, redirect to payment URL
+        if (paymentMethod === 'paypal') {
+          const paymentResponse = await fetch('http://localhost:5000/api/payments/checkout', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('htdcha-token')}`
+            },
+            body: JSON.stringify({
+              orderId: data.data.MaDH,
+              amount: data.data.TongTien,
+              orderInfo: `Thanh toan don hang ${data.data.order_code}`
+            })
+          });
+
+          const paymentData = await paymentResponse.json();
+          
+          if (paymentData.success) {
+            // Redirect to VNPay
+            window.location.href = paymentData.data.paymentUrl;
+            return;
+          }
+        }
+        
+        // Clear cart and redirect to confirmation
+        clear();
+        router.push(`/order-confirmation?orderId=${data.data.MaDH}&status=success`);
+      } else {
+        setError(data.message || 'Tạo đơn hàng thất bại');
+      }
     } catch (err) {
+      console.error('Payment error:', err);
       setError('Thanh toán thất bại, vui lòng thử lại');
     } finally {
       setLoading(false);
