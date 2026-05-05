@@ -1,102 +1,151 @@
-// Service layer - gọi API thay vì query database trực tiếp
-const BASE_URL = '/api/phieu';
+const getBaseUrl = () => {
+  if (typeof window !== 'undefined') return ''; // Client side dùng relative path
+  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'; // Server side dùng absolute path
+};
 
-// GET: Lấy danh sách phiếu nhập
+const API_ENDPOINT = `${getBaseUrl()}/api/phieu`;
+
+// ---------------------------------------------------------
+// CÁC HÀM XỬ LÝ PHIẾU NHẬP
+// ---------------------------------------------------------
+
+/** Lấy danh sách phiếu nhập */
 export async function getPhieuNhapList() {
-  const res = await fetch(`${BASE_URL}?type=nhap`);
-  if (!res.ok) throw new Error('Failed to fetch phieu nhap');
+  const res = await fetch(`${API_ENDPOINT}?type=nhap`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Không thể tải danh sách phiếu nhập');
   const data = await res.json();
+  // Trả về mảng phiếu dựa trên cấu trúc { ok: true, phieu: [...] } từ route.ts
   return data.phieu || [];
 }
 
-// GET: Lấy chi tiết phiếu nhập
+/** Lấy chi tiết một phiếu nhập (Bao gồm thông tin phiếu và danh sách sản phẩm) */
 export async function getPhieuNhapDetail(MaPN: string) {
-  const res = await fetch(`${BASE_URL}?type=nhap&maphieu=${MaPN}&chitiet=true`);
-  if (!res.ok) throw new Error('Failed to fetch phieu nhap detail');
-  const data = await res.json();
-  return data;
+  const res = await fetch(`${API_ENDPOINT}?type=nhap&maphieu=${MaPN}&chitiet=true`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Không thể tải chi tiết phiếu nhập');
+  return await res.json();
 }
 
-// GET: Lấy danh sách phiếu xuất
-export async function getPhieuXuatList() {
-  const res = await fetch(`${BASE_URL}?type=xuat`);
-  if (!res.ok) throw new Error('Failed to fetch phieu xuat');
-  const data = await res.json();
-  return data.phieu || [];
-}
-
-// GET: Lấy chi tiết phiếu xuất
-export async function getPhieuXuatDetail(MaPX: string) {
-  const res = await fetch(`${BASE_URL}?type=xuat&maphieu=${MaPX}&chitiet=true`);
-  if (!res.ok) throw new Error('Failed to fetch phieu xuat detail');
-  const data = await res.json();
-  return data;
-}
-
-// POST: Tạo phiếu nhập mới
+/** Tạo phiếu nhập mới và cập nhật tồn kho */
 export async function createPhieuNhap(phieuNhap: any, chiTiet: any[]) {
-  const res = await fetch(BASE_URL, {
+  const res = await fetch(API_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ type: 'nhap', phieu: phieuNhap, chitiet: chiTiet }),
   });
-  if (!res.ok) throw new Error('Failed to create phieu nhap');
+  if (!res.ok) throw new Error('Lỗi khi tạo phiếu nhập');
   const data = await res.json();
-  return data.MaPN;
+  return data.MaPN; // Trả về MaPN từ database
 }
 
-// POST: Tạo phiếu xuất mới
+// ---------------------------------------------------------
+// CÁC HÀM XỬ LÝ PHIẾU XUẤT
+// ---------------------------------------------------------
+
+/** Lấy danh sách phiếu xuất */
+export async function getPhieuXuatList() {
+  const res = await fetch(`${API_ENDPOINT}?type=xuat`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Không thể tải danh sách phiếu xuất');
+  const data = await res.json();
+  return data.phieu || [];
+}
+
+/** Lấy chi tiết một phiếu xuất */
+export async function getPhieuXuatDetail(MaPX: string) {
+  const res = await fetch(`${API_ENDPOINT}?type=xuat&maphieu=${MaPX}&chitiet=true`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Không thể tải chi tiết phiếu xuất');
+  return await res.json();
+}
+
+/** Tạo phiếu xuất mới */
 export async function createPhieuXuat(phieuXuat: any, chiTiet: any[]) {
-  const res = await fetch(BASE_URL, {
+  const res = await fetch(API_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ type: 'xuat', phieu: phieuXuat, chitiet: chiTiet }),
   });
-  if (!res.ok) throw new Error('Failed to create phieu xuat');
+  if (!res.ok) throw new Error('Lỗi khi tạo phiếu xuất');
   const data = await res.json();
-  return data.MaPX;
+  return data.MaPX; // Trả về MaPX từ database
 }
 
-// PUT: Cập nhật phiếu nhập
-export async function updatePhieuNhap(MaPN: string, phieuNhap: any) {
-  const res = await fetch(BASE_URL, {
+// ---------------------------------------------------------
+// CÁC HÀM CẬP NHẬT VÀ XÓA
+// ---------------------------------------------------------
+
+export async function updatePhieu(type: 'nhap' | 'xuat', id: string, data: any) {
+  const res = await fetch(API_ENDPOINT, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 'nhap', maphieu: MaPN, phieu: phieuNhap }),
+    body: JSON.stringify({ type, maphieu: id, phieu: data }),
   });
-  if (!res.ok) throw new Error('Failed to update phieu nhap');
-  return res.json();
+  if (!res.ok) throw new Error(`Không thể cập nhật phiếu ${type}`);
+  return await res.json();
 }
 
-// PUT: Cập nhật phiếu xuất
-export async function updatePhieuXuat(MaPX: string, phieuXuat: any) {
-  const res = await fetch(BASE_URL, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 'xuat', maphieu: MaPX, phieu: phieuXuat }),
-  });
-  if (!res.ok) throw new Error('Failed to update phieu xuat');
-  return res.json();
-}
-
-// DELETE: Xóa phiếu nhập
-export async function deletePhieuNhap(MaPN: string) {
-  const res = await fetch(BASE_URL, {
+export async function deletePhieu(type: 'nhap' | 'xuat', id: string) {
+  const res = await fetch(API_ENDPOINT, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 'nhap', maphieu: MaPN }),
+    body: JSON.stringify({ type, maphieu: id }),
   });
-  if (!res.ok) throw new Error('Failed to delete phieu nhap');
-  return res.json();
+
+  // Kiểm tra nếu Server trả về lỗi không phải JSON (như lỗi 500 kèm text)
+  if (!res.ok) {
+    const errorText = await res.text(); // Đọc dạng text thay vì JSON để tránh crash
+    throw new Error(errorText || `Không thể xóa phiếu ${type}`);
+  }
+
+  // Kiểm tra xem phản hồi có nội dung không trước khi .json()
+  const text = await res.text();
+  return text ? JSON.parse(text) : { ok: true };
 }
 
-// DELETE: Xóa phiếu xuất
-export async function deletePhieuXuat(MaPX: string) {
-  const res = await fetch(BASE_URL, {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 'xuat', maphieu: MaPX }),
-  });
-  if (!res.ok) throw new Error('Failed to delete phieu xuat');
-  return res.json();
-}
+  export async function createPhieuChuyen(phieuChuyen: any, chiTiet: any[]) {
+    const res = await fetch(API_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'chuyen', phieu: phieuChuyen, chitiet: chiTiet }),
+    });
+    if (!res.ok) throw new Error('Lỗi khi tạo phiếu chuyển hàng');
+    const data = await res.json();
+    return data.MaPCH;
+  }
+// ---------------------------------------------------------
+// EXPORT ĐỐI TƯỢNG PHIEUSERVICE ĐỂ FIX LỖI BUILD
+// ---------------------------------------------------------
+
+export const PhieuService = {
+  // Danh sách nhập
+  getPhieuNhapList,
+  getAllPhieuNhap: getPhieuNhapList,
+  
+  // Chi tiết nhập
+  getPhieuNhapDetail,
+  getPhieuNhap: getPhieuNhapDetail,
+  getChiTietPhieuNhap: getPhieuNhapDetail,
+  
+  // Tạo nhập
+  createPhieuNhap,
+  taoPhieuNhap: createPhieuNhap,
+
+  // Danh sách xuất
+  getPhieuXuatList,
+  getAllPhieuXuat: getPhieuXuatList,
+
+  // Chi tiết xuất
+  getPhieuXuatDetail,
+  getPhieuXuat: getPhieuXuatDetail,
+  getChiTietPhieuXuat: getPhieuXuatDetail,
+
+  // Tạo xuất
+  createPhieuXuat,
+  taoPhieuXuat: createPhieuXuat,
+
+  // Hành động khác
+  updatePhieu,
+  deletePhieu,
+  
+  getAllPhieuChuyen: () => fetch(`${API_ENDPOINT}?type=chuyen`).then(res => res.json()).then(data => data.phieu || []),
+  createPhieuChuyen,
+  taoPhieuChuyen: createPhieuChuyen,
+};

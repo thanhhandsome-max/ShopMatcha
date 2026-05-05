@@ -32,6 +32,7 @@ const config: sql.config = {
 let pool: sql.ConnectionPool | null = null;
 
 export async function getPool() {
+    console.log("Đang kết nối tới:", process.env.DB_SERVER, "với User:", process.env.DB_USER);
     if (pool && pool.connected) return pool;
     try {
         pool = await new sql.ConnectionPool(config).connect();

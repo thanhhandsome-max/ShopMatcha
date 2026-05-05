@@ -14,8 +14,8 @@ export default function LoaiSanPhamPage() {
 
     // State cho Form thêm mới (modal/form)
     const [showAddForm, setShowAddForm] = useState(false);
-    const [newMaLSP, setNewMaLSP] = useState('');
-    const [newTenLSP, setNewTenLSP] = useState('');
+    const [newMaLoai, setNewMaLoai] = useState('');
+    const [newTenLoai, setNewTenLoai] = useState('');
 
     // State cho Form sửa inline
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -39,15 +39,15 @@ export default function LoaiSanPhamPage() {
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newTenLSP.trim()) return;
+        if (!newTenLoai.trim()) return;
 
         try {
             await loaiSanPhamService.create({
-                MaLSP: newMaLSP || `LSP${Date.now()}`.substring(0, 10),
-                TenLSP: newTenLSP
+                MaLoai: newMaLoai || `LSP${Date.now()}`.substring(0, 10),
+                TenLoai: newTenLoai
             });
-            setNewMaLSP('');
-            setNewTenLSP('');
+            setNewMaLoai('');
+            setNewTenLoai('');
             setShowAddForm(false);
             loadData();
         } catch (error) {
@@ -57,23 +57,23 @@ export default function LoaiSanPhamPage() {
 
     const handleCloseAddForm = () => {
         setShowAddForm(false);
-        setNewMaLSP('');
-        setNewTenLSP('');
+        setNewMaLoai('');
+        setNewTenLoai('');
     };
 
-    const handleDelete = async (maLSP: string) => {
+    const handleDelete = async (maLoai: string) => {
         if (!confirm('Bạn có chắc chắn muốn xóa?')) return;
         try {
-            await loaiSanPhamService.delete(maLSP);
+            await loaiSanPhamService.delete(maLoai);
             loadData();
         } catch (error) {
             alert('Xóa thất bại! Có thể do đang có Sản Phẩm thuộc loại này.');
         }
     };
 
-    const handleEdit = (maLSP: string, tenLSP: string) => {
-        setEditingId(maLSP);
-        setEditingTen(tenLSP);
+    const handleEdit = (maLoai: string, tenLoai: string) => {
+        setEditingId(maLoai);
+        setEditingTen(tenLoai);
     };
 
     const handleUpdate = async (e: React.FormEvent) => {
@@ -95,8 +95,8 @@ export default function LoaiSanPhamPage() {
     };
 
     const filteredLoaiSPs = loaiSPs.filter((item) =>
-        item.MaLSP.toLowerCase().includes(searchTen.toLowerCase()) ||
-        item.TenLSP.toLowerCase().includes(searchTen.toLowerCase())
+        (item.MaLoai || '').toLowerCase().includes(searchTen.toLowerCase()) ||
+        (item.TenLoai || '').toLowerCase().includes(searchTen.toLowerCase())
     );
 
     return (
@@ -136,8 +136,8 @@ export default function LoaiSanPhamPage() {
                                     type="text"
                                     placeholder="Nhập tên loại sản phẩm..."
                                     className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:border-brand-500"
-                                    value={newTenLSP}
-                                    onChange={(e) => setNewTenLSP(e.target.value)}
+                                    value={newTenLoai}
+                                    onChange={(e) => setNewTenLoai(e.target.value)}
                                     required
                                     autoFocus
                                 />
@@ -181,9 +181,9 @@ export default function LoaiSanPhamPage() {
                             <tr><td colSpan={3} className="p-4 text-center text-gray-500">Không tìm thấy kết quả</td></tr>
                         ) : (
                             filteredLoaiSPs.map((item) => (
-                                editingId === item.MaLSP ? (
-                                    <tr key={item.MaLSP} className="border-b border-gray-100 bg-blue-50">
-                                        <td className="p-4 text-gray-600">{item.MaLSP}</td>
+                                editingId === item.MaLoai ? (
+                                    <tr key={item.MaLoai} className="border-b border-gray-100 bg-blue-50">
+                                        <td className="p-4 text-gray-600">{item.MaLoai}</td>
                                         <td className="p-4">
                                             <form onSubmit={handleUpdate} className="flex gap-2">
                                                 <input
@@ -204,18 +204,18 @@ export default function LoaiSanPhamPage() {
                                         <td className="p-4"></td>
                                     </tr>
                                 ) : (
-                                    <tr key={item.MaLSP} className="border-b border-gray-100 hover:bg-gray-50">
-                                        <td className="p-4 text-gray-600">{item.MaLSP}</td>
-                                        <td className="p-4 font-medium text-gray-800">{item.TenLSP}</td>
+                                    <tr key={item.MaLoai} className="border-b border-gray-100 hover:bg-gray-50">
+                                        <td className="p-4 text-gray-600">{item.MaLoai}</td>
+                                        <td className="p-4 font-medium text-gray-800">{item.TenLoai}</td>
                                         <td className="p-4 text-center flex gap-2 justify-center">
                                             <button
-                                                onClick={() => handleEdit(item.MaLSP, item.TenLSP)}
+                                                onClick={() => handleEdit(item.MaLoai || '', item.TenLoai || '')}
                                                 className="text-blue-500 hover:text-blue-700 font-medium text-sm"
                                             >
                                                 Sửa
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(item.MaLSP)}
+                                                onClick={() => handleDelete(item.MaLoai || '')}
                                                 className="text-red-500 hover:text-red-700 font-medium text-sm"
                                             >
                                                 Xóa

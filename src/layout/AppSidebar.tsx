@@ -50,7 +50,7 @@ const navItems: NavItem[] = [
     name: "Quản lý kho",
     subItems: [
       { name: "Xem tồn kho", path: "/quan-ly-kho", pro: false },
-      { name: "Tạo phiếu nhập/xuất", path: "/quan-ly-kho/tao-phieu", pro: false },
+      { name: "Tạo phiếu nghiệp vụ", path: "/quan-ly-kho/tao-phieu", pro: false },
     ],
   },
   {

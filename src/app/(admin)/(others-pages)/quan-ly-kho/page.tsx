@@ -3,6 +3,7 @@ import {
   getInventoryView,
   InventoryLocation,
   InventoryLocationType,
+  listInventoryByWarehouse,
 } from '@/services/inventory.service';
 
 type InventoryPageProps = {
@@ -18,22 +19,33 @@ const locationTypeOptions: Array<{ key: InventoryLocationType; label: string }> 
 ];
 
 export default async function InventoryPage({ searchParams }: InventoryPageProps) {
-  const selectedType = searchParams?.type === 'store' ? 'store' : 'warehouse';
-  const selectedLocation = searchParams?.location;
+  const params = await searchParams;
+  const selectedType = params?.type === 'store' ? 'store' : 'warehouse';
+  const selectedLocation = params?.location || '';
 
   let locations: InventoryLocation[] = [];
   let errorMessage: string | null = null;
 
+  // try {
+  //   locations = await getInventoryView({
+  //     type: selectedType,
+  //     locationId: selectedLocation,
+  //   });
+  // } catch (err) {
+  //   console.error('Lỗi tải tồn kho:', err);
+  //   errorMessage = err instanceof Error ? err.message : 'Lỗi không xác định khi tải tồn kho';
+  // }
   try {
-    locations = await getInventoryView({
-      type: selectedType,
-      locationId: selectedLocation,
+    // 1. Gọi hàm lấy dữ liệu
+    // Lưu ý: Đảm bảo listInventoryByWarehouse đã được import
+    locations = await getInventoryView({ 
+      type: selectedType, 
+      locationId: selectedLocation 
     });
-  } catch (err) {
-    console.error('Lỗi tải tồn kho:', err);
-    errorMessage = err instanceof Error ? err.message : 'Lỗi không xác định khi tải tồn kho';
+  } catch (error) {
+    console.error("Lỗi tải tồn kho:", error);
+    errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
   }
-
   const filteredLocations = selectedLocation
     ? locations.filter((location) => location.id === selectedLocation)
     : locations;
