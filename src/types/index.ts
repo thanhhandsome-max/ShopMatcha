@@ -30,8 +30,10 @@ export interface IKho {
 }
 
 export interface ILoaiSanPham {
-  MaLoai: string;
-  TenLoai: string;
+  MaLoai?: string;
+  MaLSP?: string;
+  TenLoai?: string;
+  TenLSP?: string;
   MoTa?: string;
   TrangThai?: number;
 }

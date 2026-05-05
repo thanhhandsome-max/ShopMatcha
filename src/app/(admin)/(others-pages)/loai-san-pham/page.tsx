@@ -1,12 +1,12 @@
 // src/app/loai-san-pham/page.tsx
 'use client';
 import React, { useEffect, useState } from 'react';
-import { LoaiSP } from '@/types';
+import { ILoaiSanPham } from '@/types';
 import { loaiSanPhamService } from '@/services/LoaiSanPham.service';
 
 export default function LoaiSanPhamPage() {
     // 2. State quản lý dữ liệu
-    const [loaiSPs, setLoaiSPs] = useState<LoaiSP[]>([]);
+    const [loaiSPs, setLoaiSPs] = useState<ILoaiSanPham[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     // State cho tìm kiếm
