@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shop Matcha - Trang Chủ Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+  </style>
+</head>
+<body class="bg-[#FAFAF5] min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+      <div class="text-xl font-serif text-[#2D5016] tracking-wide">HTDCHA</div>
+      <nav class="hidden md:flex items-center gap-6 text-xs tracking-wider">
+        <a href="#" class="text-gray-700 hover:text-[#2D5016]">TRANG CHỦ</a>
+        <a href="#products" class="text-gray-700 hover:text-[#2D5016]">SẢN PHẨM</a>
+        <a href="#" class="text-gray-700 hover:text-[#2D5016]">HƯỚNG DẪN</a>
+        <a href="#" class="text-gray-700 hover:text-[#2D5016]">LIÊN HỆ</a>
+      </nav>
+      <div class="flex items-center gap-4">
+        <button class="text-xs tracking-wider bg-[#2D5016] text-white px-4 py-2 hover:bg-[#3a6b1e] transition-colors">
+          ĐĂNG NHẬP
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="relative h-[70vh] lg:h-[85vh] overflow-hidden bg-gray-900">
+    <img
+      src="https://mgx-backend-cdn.metadl.com/generate/images/618746/2026-04-09/88544963-be0e-491f-abe3-dbfd08bebd77.png"
+      alt="Hero"
+      class="w-full h-full object-cover opacity-80"
+    />
+    <div class="absolute inset-0 flex items-center justify-center text-center">
+      <div class="max-w-2xl px-6">
+        <h2 class="text-4xl md:text-6xl lg:text-7xl font-serif text-white font-light tracking-wide mb-4 italic">
+          ichi-go ichi-e
+        </h2>
+        <p class="text-white/90 text-sm md:text-base tracking-wide max-w-lg mx-auto mb-8">
+          Mỗi lần gặp gỡ đều đáng quý, bởi nó không bao giờ lặp lại.
+        </p>
+        <a
+          href="#products"
+          class="inline-block bg-white text-[#2D5016] px-8 py-3.5 text-xs tracking-[0.2em] font-semibold hover:bg-[#2D5016] hover:text-white transition-all duration-300 border border-white"
+        >
+          KHÁM PHÁ NGAY
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Products -->
+  <section id="products" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <div class="text-center mb-12">
+      <h2 class="text-2xl md:text-3xl font-serif text-[#2D5016] tracking-wide mb-3">
+        Tất cả sản phẩm (20 sản phẩm)
+      </h2>
+      <p class="text-gray-500 text-sm tracking-wide">
+        Toàn bộ sản phẩm matcha cao cấp từ database
+      </p>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading" class="text-center py-10">
+      <p class="text-gray-500 text-sm">Đang tải 20 sản phẩm từ backend...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error" class="text-center py-10 hidden">
+      <p class="text-red-500 text-sm">Không thể tải sản phẩm. Vui lòng thử lại sau.</p>
+      <button onclick="loadProducts()" class="mt-4 text-xs text-[#2D5016] underline">Thử lại</button>
+    </div>
+
+    <!-- Products Grid -->
+    <div id="products-grid" class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 hidden">
+      <!-- Products will be inserted here by JavaScript -->
+    </div>
+
+    <div class="text-center mt-12">
+      <a
+        href="#"
+        class="inline-flex items-center gap-2 text-xs tracking-[0.2em] font-semibold text-[#2D5016] hover:text-[#3a6b1e] transition-colors border-b border-[#2D5016] pb-1"
+      >
+        XEM TẤT CẢ SẢN PHẨM <span>→</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- About Matcha Section -->
+  <section class="bg-[#2D5016] text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <div class="text-center mb-16">
+        <h2 class="text-2xl md:text-3xl font-serif tracking-wide mb-3">
+          HTDCHA CEREMONIAL MATCHA
+        </h2>
+        <p class="text-white/70 text-sm tracking-wide">Đến từ Ujitawara, Kyoto</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        <div class="text-center px-4">
+          <div class="w-12 h-12 mx-auto mb-4 flex items-center justify-center rounded-full bg-white/10">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+            </svg>
+          </div>
+          <h3 class="text-sm font-semibold tracking-wider mb-3 uppercase">
+            Vườn trà 3 thế hệ
+          </h3>
+          <p class="text-white/70 text-sm leading-relaxed">
+            Vinh dự được hợp tác với gia đình có truyền thống trồng trà hơn 120 năm tại vùng đất được mệnh danh là cái nôi của trà xanh Nhật Bản.
+          </p>
+        </div>
+        <div class="text-center px-4">
+          <div class="w-12 h-12 mx-auto mb-4 flex items-center justify-center rounded-full bg-white/10">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </div>
+          <h3 class="text-sm font-semibold tracking-wider mb-3 uppercase">
+            3 tuần che nắng
+          </h3>
+          <p class="text-white/70 text-sm leading-relaxed">
+            Lá trà được che nắng 20-25 ngày trước khi thu hoạch, giúp tăng hàm lượng L-theanine và chlorophyll, tạo nên vị umami đặc trưng.
+          </p>
+        </div>
+        <div class="text-center px-4">
+          <div class="w-12 h-12 mx-auto mb-4 flex items-center justify-center rounded-full bg-white/10">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+            </svg>
+          </div>
+          <h3 class="text-sm font-semibold tracking-wider mb-3 uppercase">
+            137x chống oxy hóa
+          </h3>
+          <p class="text-white/70 text-sm leading-relaxed">
+            Bột matcha có chất chống oxy hóa hơn 137 lần và hàm lượng axit amin nhiều gấp 5 lần so với các loại trà đen và trà xanh phổ biến khác.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-gray-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div>
+          <h3 class="text-lg font-serif text-[#2D5016] mb-4">HTDCHA</h3>
+          <p class="text-gray-500 text-sm">
+            Matcha ceremonial cao cấp từ Kyoto, Nhật Bản.
+          </p>
+        </div>
+        <div>
+          <h4 class="text-xs font-semibold tracking-wider text-gray-900 mb-4">SẢN PHẨM</h4>
+          <ul class="space-y-2 text-sm text-gray-500">
+            <li><a href="#" class="hover:text-[#2D5016]">Matcha</a></li>
+            <li><a href="#" class="hover:text-[#2D5016]">Sencha & Hojicha</a></li>
+            <li><a href="#" class="hover:text-[#2D5016]">Dụng cụ</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-xs font-semibold tracking-wider text-gray-900 mb-4">HỖ TRỢ</h4>
+          <ul class="space-y-2 text-sm text-gray-500">
+            <li><a href="#" class="hover:text-[#2D5016]">Hướng dẫn pha chế</a></li>
+            <li><a href="#" class="hover:text-[#2D5016]">Câu hỏi thường gặp</a></li>
+            <li><a href="#" class="hover:text-[#2D5016]">Liên hệ</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-xs font-semibold tracking-wider text-gray-900 mb-4">THEO DÕI</h4>
+          <p class="text-sm text-gray-500 mb-4">@HTDCHA.VIETNAM</p>
+        </div>
+      </div>
+      <div class="border-t border-gray-100 mt-12 pt-8 text-center text-xs text-gray-400">
+        © 2026 HTDCHA. Tất cả quyền được bảo lưu.
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript to load products from backend -->
+  <script>
+    const API_BASE_URL = 'http://localhost:5000/api';
+
+    function formatMoneyVND(price) {
+      return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+      }).format(price);
+    }
+
+    function createProductCard(product) {
+      const image = product.sanpham_anh && product.sanpham_anh.length > 0
+        ? product.sanpham_anh[0].DuongDanAnh || product.sanpham_anh[0].Anh
+        : 'https://via.placeholder.com/500x500?text=No+Image';
+
+      const name = product.TenSP || 'Sản phẩm';
+      const price = product.GiaBan ? formatMoneyVND(product.GiaBan) : 'Liên hệ';
+
+      return `
+        <div class="group relative">
+          <a href="/products/${product.MaSP}" class="block">
+            <div class="relative aspect-square overflow-hidden bg-gray-50">
+              <img
+                src="${image}"
+                alt="${name}"
+                class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                onerror="this.src='https://via.placeholder.com/500x500?text=Image+Error'"
+              />
+            </div>
+            <div class="mt-4 space-y-1.5">
+              <p class="text-[10px] text-gray-400 tracking-wider uppercase">HTDCHA</p>
+              <h3 class="text-sm font-medium text-gray-900 leading-snug line-clamp-2 group-hover:text-[#2D5016] transition-colors">
+                ${name}
+              </h3>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-gray-900">${price}</span>
+              </div>
+            </div>
+          </a>
+        </div>
+      `;
+    }
+
+    async function loadProducts() {
+      const loadingEl = document.getElementById('loading');
+      const errorEl = document.getElementById('error');
+      const gridEl = document.getElementById('products-grid');
+
+      loadingEl.classList.remove('hidden');
+      errorEl.classList.add('hidden');
+      gridEl.classList.add('hidden');
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/products?limit=20`);
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || 'Failed to fetch products');
+        }
+
+        const products = result.data.products || [];
+
+        if (products.length === 0) {
+          gridEl.innerHTML = '<div class="col-span-full text-center py-10"><p class="text-gray-500 text-sm">Không tìm thấy sản phẩm nào.</p></div>';
+        } else {
+          gridEl.innerHTML = products.map(product => createProductCard(product)).join('');
+        }
+
+        loadingEl.classList.add('hidden');
+        gridEl.classList.remove('hidden');
+      } catch (error) {
+        console.error('Error loading products:', error);
+        loadingEl.classList.add('hidden');
+        errorEl.classList.remove('hidden');
+      }
+    }
+
+    // Load products when page loads
+    document.addEventListener('DOMContentLoaded', loadProducts);
+  </script>
+
+</body>
+</html>
