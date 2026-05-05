@@ -7,62 +7,455 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  password  String?
-  role      UserRole @default(CUSTOMER)
-  orders    Order[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// Chi tiết đơn hàng
+model chitietdonhang {
+  MaSP     String   @db.VarChar(10)
+  MaDH     String   @db.VarChar(10)
+  SoLuong  Int?
+  TongTien Decimal? @db.Decimal(15, 2)
+  sanpham  sanpham  @relation("CTDH_SanPham", fields: [MaSP], references: [MaSP], onUpdate: Restrict, map: "chitietdonhang_ibfk_1")
+  donhang  donhang  @relation("CTDH_DonHang", fields: [MaDH], references: [MaDH], onUpdate: Restrict, map: "chitietdonhang_ibfk_2")
+
+  @@id([MaSP, MaDH])
+  @@index([MaDH], map: "MaDH")
 }
 
-model Product {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  price       Int
-  imageUrl    String?
-  stock       Int      @default(0)
-  orderItems  OrderItem[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// Chi tiết phiếu chuyển hàng
+model chitietphieuchuyenhang {
+  MaPC  String   @db.VarChar(20)
+  MaSp  String   @db.VarChar(20)
+  SoLuong  Int      @default(0)
+  TongTien Decimal? @db.Decimal(15, 2)
+  phieuchuyenhang phieuchuyenhang @relation("CTPC_PhieuChuyen", fields: [MaPC], references: [MaPC], onUpdate: Restrict, map: "FK_CTPC_PhieuChuyen")
+  sanpham sanpham @relation("CTPC_SanPham", fields: [MaSp], references: [MaSP], onUpdate: Restrict, map: "FK_CTPC_SanPham")
+
+  @@id([MaPC, MaSp])
 }
 
-model Order {
-  id         String      @id @default(cuid())
-  userId     String
-  user       User        @relation(fields: [userId], references: [id])
-  status     OrderStatus @default(PENDING)
-  items      OrderItem[]
-  totalPrice Int
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+// Chi tiết phiếu nhận hàng
+model chitietphieunhanhang {
+  MaPNH    String   @db.VarChar(20)
+  MaSp     String   @db.VarChar(20)
+  SoLuong  Int      @default(0)
+  TongTien Decimal? @db.Decimal(15, 2)
+  phieunhanhang phieunhanhang @relation("CTPNH_PhieuNhan", fields: [MaPNH], references: [MaPNH], onUpdate: Restrict, map: "FK_CTPNH_PhieuNhan")
+  sanpham sanpham @relation("CTPNH_SanPham", fields: [MaSp], references: [MaSP], onUpdate: Restrict, map: "FK_CTPNH_SanPham")
+
+  @@id([MaPNH, MaSp])
 }
 
-model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  productId String
-  quantity  Int
-  unitPrice Int
+// Chi tiết phiếu nhập
+model chitietphieunhap {
+  MaPN  String   @db.VarChar(20)
+  MaSP  String   @db.VarChar(20)
+  SoLuong  Int      @default(0)
+  TongTien Decimal? @db.Decimal(15, 2)
+  phieunhap phieunhap @relation("CTPN_PhieuNhap", fields: [MaPN], references: [MaPN], onUpdate: Cascade, map: "FK_CTPN_PhieuNhap")
+  sanpham sanpham @relation("CTPN_SanPham", fields: [MaSP], references: [MaSP], onUpdate: Cascade, map: "FK_CTPN_SanPham")
 
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
-
-  @@unique([orderId, productId])
+  @@id([MaPN, MaSP])
 }
 
-enum UserRole {
-  CUSTOMER
-  ADMIN
+// Chi tiết phiếu xuất
+model chitietphieuxuat {
+  MaPX  String   @db.VarChar(20)
+  MaSP  String   @db.VarChar(20)
+  SoLuong  Int?
+  phieuxuat phieuxuat @relation("CTPX_PhieuXuat", fields: [MaPX], references: [MaPX], onDelete: Cascade, map: "chitietphieuxuat_ibfk_1")
+  sanpham sanpham @relation("CTPX_SanPham", fields: [MaSP], references: [MaSP], map: "chitietphieuxuat_ibfk_2")
+
+  @@id([MaPX, MaSP])
 }
 
-enum OrderStatus {
-  PENDING
-  PAID
-  SHIPPED
-  COMPLETED
-  CANCELLED
+// Chuyển hàng thành phẩm
+model chuyenhangthanhpham {
+  MaHD        String   @id @db.VarChar(20)
+  MaVanDon    String?  @db.VarChar(100)
+  DonViVanChuyen String?  @db.VarChar(100)
+  NgayGui     DateTime?
+  NgayDuKien  DateTime?
+  NgayNhan    DateTime?
+  TrangThai   Int?     @default(0)
+  GhiChu      String?  @db.Text
+  donhang  donhang @relation("CHT_DonHang", fields: [MaHD], references: [MaDH], onDelete: Cascade, map: "FK_GiaoHang_HoaDon")
+}
+
+// Cửa hàng
+model cuahang {
+  MaCH          String          @id @db.VarChar(20)
+  TenCH         String          @db.VarChar(100)
+  DiaChi        String?         @db.VarChar(255)
+  SDT           String?         @db.VarChar(15)
+  donhang       donhang[]
+  nhanvien      nhanvien[]
+  tonkhocuahang tonkhocuahang[]
+  khuyenmai     khuyenmai[]
+  phieuchuyenhang_xuat phieuchuyenhang[] @relation("CuaHangXuat")
+  phieuchuyenhang_nhan phieuchuyenhang[] @relation("CuaHangNhan")
+  phieuxuat     phieuxuat[]
+}
+
+// Đơn hàng
+model donhang {
+  MaDH           String           @id @db.VarChar(20)
+  MaCH           String?          @db.VarChar(20)
+  MaNV           String?          @db.VarChar(20)
+  MaKH           String?          @db.VarChar(20)
+  Makmkh         String?          @db.VarChar(20)
+  MaTaiKhoan     String?          @db.VarChar(20)
+  order_code     String?          @unique @db.VarChar(50)
+  order_type     Int?             @default(1)
+  TongTien       Decimal?         @default(0.00) @db.Decimal(15, 2)
+  subtotal       Decimal?         @default(0.00) @db.Decimal(15, 2)
+  shipping_fee   Decimal?         @default(0.00) @db.Decimal(15, 2)
+  TrangThai      Int?             @default(1)
+  payment_status  Int?             @default(0)
+  payment_method  String?          @db.VarChar(50)
+  address_id     String?          @db.VarChar(50)
+  customer_note  String?          @db.Text
+  NgayTao        DateTime?        @default(now()) @db.Timestamp
+  chitietdonhang  chitietdonhang[] @relation("CTDH_DonHang")
+  taikhoan       taikhoan?        @relation("HD_TaiKhoan", fields: [MaTaiKhoan], references: [MaTaiKhoan], onDelete: Restrict, onUpdate: Restrict, map: "FK_HD_TaiKhoan")
+  cuahang        cuahang?         @relation(fields: [MaCH], references: [MaCH], onDelete: Restrict, onUpdate: Restrict, map: "FK_HD_CuaHang")
+  nhanvien       nhanvien?        @relation(fields: [MaNV], references: [MaNV], onDelete: Restrict, onUpdate: Restrict, map: "FK_HD_NhanVien")
+  khachhang      khachhang?        @relation(fields: [MaKH], references: [MaKH], onDelete: Restrict, onUpdate: Restrict, map: "FK_HD_KhachHang")
+  khuyenmaikhachhang khuyenmaikhachhang? @relation("HD_KMKH", fields: [Makmkh], references: [Makmkh], onDelete: Restrict, onUpdate: Restrict, map: "FK_HD_KMKH")
+  payments       payments[]
+  chuyenhangthanhpham chuyenhangthanhpham? @relation("CHT_DonHang")
+
+  @@index([MaCH], map: "FK_HD_CuaHang")
+  @@index([MaNV], map: "FK_HD_NhanVien")
+  @@index([MaKH], map: "FK_HD_KhachHang")
+  @@index([Makmkh], map: "FK_HD_KMKH")
+  @@index([MaTaiKhoan], map: "FK_HD_TaiKhoan")
+  @@index([order_code], map: "order_code")
+}
+
+// Khách hàng
+model khachhang {
+  MaKH       String    @id @db.VarChar(20)
+  TenKH      String    @db.VarChar(255)
+  SDT        String?   @db.VarChar(20)
+  NgaySinh   DateTime? @db.Date
+  GioiTinh   String?   @db.VarChar(10)
+  DiaChi     String?   @db.VarChar(255)
+  Email      String?   @unique @db.VarChar(100)
+  NgayTao    DateTime? @default(now()) @db.Timestamp
+  TrangThai  Int?     @default(1)
+  MaTaiKhoan String?   @db.VarChar(20)
+  taikhoan   taikhoan? @relation("KH_TaiKhoan", fields: [MaTaiKhoan], references: [MaTaiKhoan], onDelete: Restrict, onUpdate: Restrict, map: "FK_KH_TaiKhoan")
+  donhang     donhang[]
+  address     address[]
+  khuyenmaikhachhang khuyenmaikhachhang[]
+  payments    payments[]
+
+  @@index([MaTaiKhoan], map: "FK_KH_TaiKhoan")
+  @@index([Email], map: "Email")
+}
+
+// Kho
+model kho {
+  MaKho    String     @id @db.VarChar(20)
+  TenKho   String     @db.VarChar(100)
+  DiaChi   String?    @db.VarChar(255)
+  SoDienThoai String? @db.VarChar(20)
+  TrangThai Int?     @default(1)
+  nhanvien nhanvien[]
+  tonkho   tonkho[]
+}
+
+// Loại sản phẩm
+model loaisanpham {
+  MaLoai  String    @id @db.VarChar(20)
+  TenLoai String    @db.VarChar(100)
+  Mota    String?   @db.Text
+  TrangThai Int?   @default(1)
+  sanpham sanpham[]
+}
+
+// Nhân viên
+model nhanvien {
+  MaNV       String    @id @db.VarChar(20)
+  HoTen      String    @db.VarChar(100)
+  NgayNhanChuc DateTime? @db.Date
+  TrangThai  String?   @db.VarChar(50)
+  DiaChi     String?   @db.VarChar(255)
+  SDT        String?   @db.VarChar(15)
+  LuongNen   Decimal?  @db.Decimal(15, 2)
+  Email      String?   @unique @db.VarChar(100)
+  MaCH       String?   @db.VarChar(20)
+  MaKho      String?   @db.VarChar(20)
+  MaTaiKhoan String?   @db.VarChar(20)
+  cuahang    cuahang?  @relation(fields: [MaCH], references: [MaCH], onDelete: Restrict, onUpdate: Restrict, map: "nhanvien_ibfk_1")
+  kho        kho?      @relation(fields: [MaKho], references: [MaKho], onDelete: Restrict, onUpdate: Restrict, map: "nhanvien_ibfk_2")
+  taikhoan   taikhoan? @relation("NV_TaiKhoan", fields: [MaTaiKhoan], references: [MaTaiKhoan], onDelete: Restrict, onUpdate: Restrict, map: "nhanvien_ibfk_3")
+  donhang     donhang[]
+  phieuxuat   phieuxuat[]
+  phieunhap  phieunhap[] @relation("PN_NhanVien")
+  phieunhanhang phieunhanhang[] @relation("PNH_NhanVien")
+  phanquyen  phanquyen[] @relation("PQ_NhanVien")
+
+  @@index([MaCH], map: "nhanvien_ibfk_1")
+  @@index([MaKho], map: "nhanvien_ibfk_2")
+  @@index([MaTaiKhoan], map: "nhanvien_ibfk_3")
+  @@index([Email], map: "Email")
+}
+
+// Nhà phân phối
+model nhaphanphoi {
+  MaNPP     String      @id @db.VarChar(20)
+  TenNPP    String      @db.VarChar(255)
+  DiaChi    String?     @db.VarChar(255)
+  Sdt       String?     @db.VarChar(20)
+  phieunhap phieunhap[]
+}
+
+// Payments
+model payments {
+  payment_id   String   @id @db.VarChar(20)
+  MaHD         String   @db.VarChar(20)
+  MaKH         String?  @db.VarChar(20)
+  transaction_id String?  @db.VarChar(100)
+  amount       Decimal  @db.Decimal(15, 2)
+  currency     String?  @default("VND") @db.VarChar(10)
+  payment_method String?  @db.VarChar(50)
+  payment_endpoint String? @db.VarChar(255)
+  status       Int?     @default(0)
+  paid_at      DateTime?
+  note         String?  @db.Text
+  donhang      donhang? @relation(fields: [MaHD], references: [MaDH], onDelete: Cascade, map: "FK_Payments_HoaDon")
+  khachhang    khachhang? @relation(fields: [MaKH], references: [MaKH], onDelete: Cascade, map: "FK_Payments_KhachHang")
+  payment_logs payment_logs[]
+
+  @@index([MaHD], map: "FK_Payments_HoaDon")
+  @@index([MaKH], map: "FK_Payments_KhachHang")
+}
+
+// Payment logs
+model payment_logs {
+  Payment_Logs_id Int      @id @default(autoincrement())
+  payment_id      String?  @db.VarChar(20)
+  log_type        String?  @db.VarChar(50)
+  vnp_TxnRef      String?  @db.VarChar(100)
+  response_code   String?  @db.VarChar(10)
+  message         String?  @db.Text
+  new_data        Json?
+  created_at      DateTime? @default(now())
+  payments        payments? @relation(fields: [payment_id], references: [payment_id], onDelete: Cascade, map: "FK_Logs_Payments")
+
+  @@index([payment_id], map: "FK_Logs_Payments")
+}
+
+// Phân quyền
+model phanquyen {
+  MaTK      String   @id @db.VarChar(20)
+  MaVaiTro  String   @db.VarChar(20)
+  MaNV      String?  @db.VarChar(20)
+  taikhoan  taikhoan @relation("PQ_TaiKhoan", fields: [MaTK], references: [MaTaiKhoan], onDelete: Cascade, map: "FK_PQ_TaiKhoan")
+  vaitro    vaitro   @relation("PQ_VaiTro", fields: [MaVaiTro], references: [MaVaiTro], onDelete: Cascade, map: "FK_PQ_VaiTro2")
+  nhanvien  nhanvien? @relation("PQ_NhanVien", fields: [MaNV], references: [MaNV], onDelete: Cascade, map: "FK_PQ_NhanVien")
+
+  @@index([MaTK], map: "FK_PQ_TaiKhoan")
+  @@index([MaVaiTro], map: "FK_PQ_VaiTro")
+  @@index([MaNV], map: "FK_PQ_NhanVien")
+}
+
+// Phiếu chuyển hàng
+model phieuchuyenhang {
+  MaPC           String                 @id @db.VarChar(20)
+  MaCH_Xuat      String?                @db.VarChar(20)
+  MaCH_Nhan      String?                @db.VarChar(20)
+  TongTien       Decimal?               @default(0.00) @db.Decimal(15, 2)
+  NgayTao        DateTime?              @default(now()) @db.Timestamp
+  trangthai      Int?                   @default(0)
+  chitietphieuchuyenhang chitietphieuchuyenhang[] @relation("CTPC_PhieuChuyen")
+  cuahang_xuat   cuahang?              @relation("CuaHangXuat", fields: [MaCH_Xuat], references: [MaCH], onDelete: Restrict, onUpdate: Restrict, map: "FK_PC_CuaHangXuat")
+  cuahang_nhan   cuahang?              @relation("CuaHangNhan", fields: [MaCH_Nhan], references: [MaCH], onDelete: Restrict, onUpdate: Restrict, map: "FK_PC_CuaHangNhan")
+  phieunhanhang phieunhanhang? @relation("PNH_PhieuChuyen")
+}
+
+// Phiếu nhận hàng
+model phieunhanhang {
+  MaPNH          String                 @id @db.VarChar(20)
+  MaPC           String?                @db.VarChar(20)
+  MaNV           String?                @db.VarChar(20)
+  MaTaiKhoan     String?                @db.VarChar(20)
+  TongTien       Decimal?               @default(0.00) @db.Decimal(15, 2)
+  NgayTao        DateTime?              @default(now()) @db.Timestamp
+  trangthai      Int?                   @default(1)
+  chitietphieunhanhang chitietphieunhanhang[] @relation("CTPNH_PhieuNhan")
+  nhanvien       nhanvien?              @relation("PNH_NhanVien", fields: [MaNV], references: [MaNV], onDelete: Restrict, onUpdate: Restrict, map: "FK_PNH_NhanVien")
+  taikhoan       taikhoan?              @relation("PNH_TaiKhoan", fields: [MaTaiKhoan], references: [MaTaiKhoan], onDelete: Restrict, onUpdate: Restrict, map: "FK_PNH_TaiKhoan")
+  phieuchuyenhang phieuchuyenhang?      @relation("PNH_PhieuChuyen", fields: [MaPC], references: [MaPC], onDelete: Restrict, onUpdate: Restrict, map: "FK_PNH_PhieuChuyen")
+
+  @@unique([MaPC])
+}
+
+// Phiếu nhập
+model phieunhap {
+  MaPN       String             @id @db.VarChar(20)
+  MaNPP      String?            @db.VarChar(20)
+  MaNV       String?            @db.VarChar(20)
+  TongTien   Decimal?           @default(0.00) @db.Decimal(15, 2)
+  NgayTao    DateTime?           @default(now()) @db.Timestamp
+  TrangThai  Int?               @default(1)
+  MaTaiKhoan String? @db.VarChar(20)
+
+  chitietphieunhap chitietphieunhap[] @relation("CTPN_PhieuNhap")
+  nhaphanphoi nhaphanphoi?       @relation(fields: [MaNPP], references: [MaNPP], onUpdate: Cascade, map: "FK_PN_NhaPhanPhoi")
+  nhanvien   nhanvien?          @relation("PN_NhanVien", fields: [MaNV], references: [MaNV], onUpdate: Cascade, map: "FK_PN_NhanVien")
+  taikhoan taikhoan? @relation("PN_TaiKhoan", fields: [MaTaiKhoan], references: [MaTaiKhoan], onDelete: Restrict, onUpdate: Restrict, map: "FK_PN_TaiKhoan")
+
+  @@index([MaNPP], map: "FK_PN_NhaPhanPhoi")
+  @@index([MaNV], map: "FK_PN_NhanVien")
+}
+
+// Phiếu xuất
+model phieuxuat {
+  MaPX       String             @id @db.VarChar(20)
+  NgayTao    DateTime?           @default(now()) @db.DateTime
+  TongTien   Decimal?           @default(0.00) @db.Decimal(18, 2)
+  TrangThai  Int?               @default(1)
+  MaNV       String?            @db.VarChar(20)
+  MaCH       String?            @db.VarChar(20)
+  MaTaiKhoan String? @db.VarChar(20)
+  chitietphieuxuat chitietphieuxuat[] @relation("CTPX_PhieuXuat")
+  nhanvien   nhanvien?          @relation(fields: [MaNV], references: [MaNV], onDelete: Restrict, onUpdate: Restrict, map: "FK_MaNV")
+  cuahang    cuahang?           @relation(fields: [MaCH], references: [MaCH], onDelete: Restrict, onUpdate: Restrict, map: "FK_MaCH")
+  taikhoan taikhoan? @relation("PX_TaiKhoan", fields: [MaTaiKhoan], references: [MaTaiKhoan], onDelete: Restrict, onUpdate: Restrict, map: "FK_PX_TaiKhoan2")
+
+  @@index([MaNV], map: "FK_MaNV")
+  @@index([MaCH], map: "FK_MaCH")
+}
+
+// Sản phẩm
+model sanpham {
+  MaSP         String                 @id @db.VarChar(20)
+  TenSP        String                 @db.VarChar(255)
+  MaCodeSp     String?                @unique @db.VarChar(50)
+  GiaVon       Decimal?               @default(0.00) @db.Decimal(18, 2)
+  GiaBan       Decimal?               @default(0.00) @db.Decimal(18, 2)
+  Mota         String?                @db.Text
+  TrangThai    String?                @default("1") @db.VarChar(50)
+  MaLoai       String?                @db.VarChar(20)
+  NgayTao      DateTime?              @default(now()) @db.Timestamp
+  chitietdonhang chitietdonhang[] @relation("CTDH_SanPham")
+  chitietphieuchuyenhang chitietphieuchuyenhang[] @relation("CTPC_SanPham")
+  chitietphieunhanhang chitietphieunhanhang[] @relation("CTPNH_SanPham")
+  chitietphieunhap chitietphieunhap[] @relation("CTPN_SanPham")
+  chitietphieuxuat chitietphieuxuat[] @relation("CTPX_SanPham")
+  loaisanpham  loaisanpham?           @relation(fields: [MaLoai], references: [MaLoai], onDelete: Restrict, onUpdate: Restrict, map: "FK_SanPham_Loai")
+  tonkho       tonkho[]
+  tonkhocuahang tonkhocuahang[]
+  sanpham_anh  sanpham_anh[]
+  khuyenmai    khuyenmai[]
+
+  @@index([MaLoai], map: "FK_SanPham_Loai")
+  @@index([MaCodeSp], map: "MaCodeSp")
+}
+
+// Tài khoản
+model taikhoan {
+  MaTaiKhoan    String          @id @db.VarChar(20)
+  TenDangNhap   String          @unique(map: "TenDangNhap") @db.VarChar(50)
+  MatKhau       String          @db.VarChar(255)
+  TrangThai     Int?            @default(1)
+  donhang       donhang[] @relation("HD_TaiKhoan")
+  khachhang     khachhang[] @relation("KH_TaiKhoan")
+  nhanvien      nhanvien[] @relation("NV_TaiKhoan")
+  phieunhanhang phieunhanhang[] @relation("PNH_TaiKhoan")
+  phieunhap     phieunhap[] @relation("PN_TaiKhoan")
+  phieuxuat     phieuxuat[] @relation("PX_TaiKhoan")
+  vaitro        vaitro?         @relation(fields: [MaVaiTro], references: [MaVaiTro], onDelete: Restrict, onUpdate: Restrict, map: "FK_TaiKhoan_VaiTro")
+  MaVaiTro      String?         @db.VarChar(20)
+  phanquyen     phanquyen[] @relation("PQ_TaiKhoan")
+
+  @@index([MaVaiTro], map: "FK_TaiKhoan_VaiTro")
+}
+
+// Tồn kho
+model tonkho {
+  MaKho   String  @db.VarChar(20)
+  MaSP    String  @db.VarChar(20)
+  SoLuong Int?    @default(0)
+  NgayCapNhat DateTime? @default(now()) @db.Timestamp
+  sanpham sanpham @relation(fields: [MaSP], references: [MaSP], onDelete: Cascade, onUpdate: Restrict, map: "FK_TonKho_SanPham")
+  kho     kho     @relation(fields: [MaKho], references: [MaKho], onDelete: Cascade, onUpdate: Restrict, map: "FK_TonKho_Kho")
+
+  @@id([MaKho, MaSP])
+  @@index([MaSP], map: "FK_TonKho_SanPham")
+  @@index([MaKho], map: "FK_TonKho_Kho")
+}
+
+// Tồn kho cửa hàng
+model tonkhocuahang {
+  MaSP    String  @db.VarChar(20)
+  MaCH    String  @db.VarChar(20)
+  SoLuong Int?    @default(0)
+  sanpham sanpham @relation(fields: [MaSP], references: [MaSP], onDelete: Cascade, onUpdate: Restrict, map: "FK_TonKhoCuaHang_SanPham")
+  cuahang cuahang @relation(fields: [MaCH], references: [MaCH], onDelete: Cascade, onUpdate: Restrict, map: "FK_TonKhoCuaHang_CuaHang")
+
+  @@id([MaSP, MaCH])
+  @@index([MaSP], map: "FK_TonKhoCuaHang_SanPham")
+  @@index([MaCH], map: "FK_TonKhoCuaHang_CuaHang")
+}
+
+// Vai trò
+model vaitro {
+  MaVaiTro  String     @id @db.VarChar(20)
+  TenVaiTro String     @db.VarChar(100)
+  taikhoan  taikhoan[]
+  phanquyen phanquyen[] @relation("PQ_VaiTro")
+}
+
+// Địa chỉ
+model address {
+  address_id   String   @id @db.VarChar(20)
+  Makh        String   @db.VarChar(20)
+  ten         String?  @db.VarChar(100)
+  Sdt         String?  @db.VarChar(20)
+  tinhthanhpho String?  @db.VarChar(100)
+  quanhuyen   String?  @db.VarChar(100)
+  coinh       String?  @db.VarChar(255)
+  khachhang   khachhang @relation(fields: [Makh], references: [MaKH], onDelete: Cascade, map: "FK_Address_KhachHang")
+
+  @@index([Makh], map: "FK_Address_KhachHang")
+}
+
+// Ảnh sản phẩm
+model sanpham_anh {
+  MaAnh     String   @id @db.VarChar(20)
+  MaSP       String   @db.VarChar(20)
+  DuongDanAnh String   @db.VarChar(255)
+  ThuTu      Int?     @default(0)
+  AnhChinh   Int?     @default(0)
+  sanpham    sanpham @relation(fields: [MaSP], references: [MaSP], onDelete: Cascade, onUpdate: Cascade, map: "FK_Anh_SanPham")
+
+  @@index([MaSP], map: "FK_Anh_SanPham")
+}
+
+// Khuyến mãi
+model khuyenmai {
+  Makhuyenmai String   @id @db.VarChar(20)
+  MaCH        String?  @db.VarChar(20)
+  Masp        String?  @db.VarChar(20)
+  mota        String?  @db.Text
+  giatri      Decimal? @default(0.00) @db.Decimal(15, 2)
+  thoihan     DateTime?
+  cuahang     cuahang? @relation(fields: [MaCH], references: [MaCH], map: "FK_KM_CuaHang")
+  sanpham     sanpham? @relation(fields: [Masp], references: [MaSP], map: "FK_KM_SanPham")
+}
+
+// Khuyến mãi khách hàng
+model khuyenmaikhachhang {
+  Makmkh     String   @id @db.VarChar(20)
+  MaKH       String   @db.VarChar(20)
+  giatri     Decimal? @default(0.00) @db.Decimal(15, 2)
+  thoihan    DateTime?
+  mota       String?  @db.Text
+  Uutien     Int?     @default(0)
+  khachhang  khachhang @relation(fields: [MaKH], references: [MaKH], onDelete: Cascade, map: "FK_KMKH_KhachHang")
+  donhang    donhang[] @relation("HD_KMKH")
+
+  @@index([MaKH], map: "FK_KMKH_KhachHang")
 }

@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { ArrowRight, Leaf, Sun, Mountain } from "lucide-react";
-import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import Header from "@/components/layout/Header";
 import ProductCard from "@/components/shop/ProductCard";
-import { getFeaturedProducts } from "@/data/products";
+import { fetchProductList, FrontendProduct, mapBackendProduct } from "@/lib/backend";
+import { ArrowRight, Leaf, Mountain, Sun } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 const heroImage = "https://mgx-backend-cdn.metadl.com/generate/images/618746/2026-04-09/88544963-be0e-491f-abe3-dbfd08bebd77.png";
 const fieldImage = "https://mgx-backend-cdn.metadl.com/generate/images/618746/2026-04-09/cc543ae9-1f31-403d-b2bf-8b80c519d337.png";
@@ -14,8 +14,10 @@ const matchaPowder = "https://mgx-backend-cdn.metadl.com/generate/images/618746/
 const matchaLatte = "https://mgx-backend-cdn.metadl.com/generate/images/618746/2026-04-09/842bcae5-9110-4f1b-8bb9-5ada7d092124.png";
 
 export default function Index() {
-  const featuredProducts = getFeaturedProducts();
+  const [featuredProducts, setFeaturedProducts] = useState<FrontendProduct[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const slides = [
     {
@@ -29,6 +31,24 @@ export default function Index() {
       subtitle: "Matcha ceremonial cao cấp từ vườn trà hơn 120 năm tại Ujitawara.",
     },
   ];
+
+  useEffect(() => {
+    const loadFeatured = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const data = await fetchProductList({ limit: 4 });
+        setFeaturedProducts(data.products.map(mapBackendProduct));
+      } catch (fetchError) {
+        setError("Không thể tải sản phẩm nổi bật từ backend.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFeatured();
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -99,11 +119,23 @@ export default function Index() {
             Những sản phẩm matcha cao cấp được yêu thích nhất
           </p>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-          {featuredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+
+        {error ? (
+          <div className="text-center py-10">
+            <p className="text-red-500 text-sm">{error}</p>
+          </div>
+        ) : loading ? (
+          <div className="text-center py-10">
+            <p className="text-gray-500 text-sm">Đang tải sản phẩm nổi bật...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            {featuredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
+
         <div className="text-center mt-12">
           <Link
             href="/products"

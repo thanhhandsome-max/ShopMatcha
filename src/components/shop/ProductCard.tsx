@@ -1,19 +1,26 @@
 'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
+import { formatMoneyVND, useCart } from "@/store/useCart";
 import { ShoppingBag } from "lucide-react";
-import { useCart, formatMoneyVND } from "@/store/useCart";
-import type { Product } from "@/data/products";
+import Link from "next/link";
+import { useState } from "react";
 
 interface ProductCardProps {
-  product: Product;
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    image: string;
+    imageHover?: string;
+    tags?: string[];
+    priceMax?: number;
+  };
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const addItem = useCart((s) => s.addItem);
+  const tags = product.tags ?? [];
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -46,12 +53,12 @@ export default function ProductCard({ product }: ProductCardProps) {
             />
           </picture>
           {/* Tags */}
-          {product.tags.includes("bestseller") && (
+          {tags.includes("bestseller") && (
             <span className="absolute top-3 left-3 z-10 bg-[#2D5016] text-white text-[10px] tracking-wider px-2 py-1 uppercase font-medium">
               Bestseller
             </span>
           )}
-          {product.tags.includes("new") && (
+          {tags.includes("new") && (
             <span className="absolute top-3 left-3 z-10 bg-amber-600 text-white text-[10px] tracking-wider px-2 py-1 uppercase font-medium">
               Mới
             </span>

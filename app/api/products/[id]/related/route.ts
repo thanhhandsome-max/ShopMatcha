@@ -18,13 +18,17 @@ async function proxyBackend(path: string, request: Request) {
   return NextResponse.json(data, { status: response.status });
 }
 
-export async function GET(request: Request) {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    return await proxyBackend('/products', request);
+    const { id } = await params;
+    return await proxyBackend(`/products/${id}/related`, request);
   } catch (error) {
-    console.error('Proxy error for /api/products:', error);
+    console.error('Proxy error for /api/products/[id]/related:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch products from backend' },
+      { success: false, error: 'Failed to fetch related products from backend' },
       { status: 500 }
     );
   }

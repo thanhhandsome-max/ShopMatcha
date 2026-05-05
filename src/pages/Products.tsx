@@ -1,11 +1,15 @@
 'use client';
 
-import { useState, useMemo } from "react";
-import { SlidersHorizontal } from "lucide-react";
-import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import Header from "@/components/layout/Header";
 import ProductCard from "@/components/shop/ProductCard";
-import { products } from "@/data/products";
+import {
+    FrontendProduct,
+    fetchProductList,
+    mapBackendProduct,
+} from "@/lib/backend";
+import { SlidersHorizontal } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 const categories = [
   { value: "all", label: "Tất cả" },
@@ -22,9 +26,30 @@ const sortOptions = [
 ];
 
 export default function Products() {
+  const [products, setProducts] = useState<FrontendProduct[]>([]);
   const [category, setCategory] = useState("all");
   const [sort, setSort] = useState("featured");
   const [showFilters, setShowFilters] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const data = await fetchProductList({ limit: 100 });
+        setProducts(data.products.map(mapBackendProduct));
+      } catch (fetchError) {
+        setError("Không thể tải sản phẩm từ backend. Vui lòng thử lại sau.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -45,12 +70,11 @@ export default function Products() {
         break;
       case "featured":
       default:
-        result.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
         break;
     }
 
     return result;
-  }, [category, sort]);
+  }, [category, sort, products]);
 
   return (
     <div className="min-h-screen bg-[#FAFAF5]">
@@ -112,20 +136,31 @@ export default function Products() {
 
         {/* Results Count */}
         <p className="text-xs text-gray-500 mb-6 tracking-wider">
-          {filteredProducts.length} sản phẩm
+          {loading ? "Đang tải sản phẩm..." : `${filteredProducts.length} sản phẩm`}
         </p>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-
-        {filteredProducts.length === 0 && (
+        {error ? (
           <div className="text-center py-20">
-            <p className="text-gray-500 text-sm">Không tìm thấy sản phẩm nào.</p>
+            <p className="text-red-500 text-sm">{error}</p>
           </div>
+        ) : loading ? (
+          <div className="text-center py-20">
+            <p className="text-gray-500 text-sm">Đang tải sản phẩm từ backend...</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+              {filteredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+
+            {filteredProducts.length === 0 && (
+              <div className="text-center py-20">
+                <p className="text-gray-500 text-sm">Không tìm thấy sản phẩm nào.</p>
+              </div>
+            )}
+          </>
         )}
       </div>
 

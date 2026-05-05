@@ -1,30 +1,92 @@
 'use client';
 
-import { useState } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
-import { Minus, Plus, ShoppingBag, ChevronRight, Truck, Shield, RotateCcw } from "lucide-react";
-import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import Header from "@/components/layout/Header";
 import ProductCard from "@/components/shop/ProductCard";
-import { useCart, formatMoneyVND } from "@/store/useCart";
-import { getProductById, getFeaturedProducts } from "@/data/products";
+import {
+    FrontendProduct,
+    fetchProductById,
+    fetchRelatedProducts,
+    mapBackendProduct,
+} from "@/lib/backend";
+import { formatMoneyVND, useCart } from "@/store/useCart";
+import { ChevronRight, Minus, Plus, RotateCcw, Shield, ShoppingBag, Truck } from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function ProductDetail() {
   const params = useParams();
   const id = (params?.id as string) || "";
-  const product = getProductById(id);
-  const addItem = useCart((s) => s.addItem);
+  const [product, setProduct] = useState<FrontendProduct | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<FrontendProduct[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [added, setAdded] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const addItem = useCart((s) => s.addItem);
 
-  if (!product) {
+  useEffect(() => {
+    const loadProduct = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const productData = await fetchProductById(id);
+        setProduct(mapBackendProduct(productData));
+
+        const relatedData = await fetchRelatedProducts(id);
+        setRelatedProducts(relatedData.map(mapBackendProduct));
+      } catch (fetchError) {
+        setError("Không thể tải chi tiết sản phẩm. Vui lòng thử lại sau.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      loadProduct();
+    }
+  }, [id]);
+
+  const handleAddToCart = () => {
+    if (!product) {
+      return;
+    }
+
+    addItem(
+      {
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+      },
+      quantity
+    );
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FAFAF5]">
+        <Header />
+        <div className="max-w-7xl mx-auto px-4 py-20 text-center">
+          <p className="text-gray-500 text-sm">Đang tải thông tin sản phẩm...</p>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !product) {
     return (
       <div className="min-h-screen bg-[#FAFAF5]">
         <Header />
         <div className="max-w-7xl mx-auto px-4 py-20 text-center">
           <h1 className="text-2xl font-serif text-gray-900 mb-4">Sản phẩm không tồn tại</h1>
+          <p className="text-gray-500 text-sm mb-6">{error || "Không tìm thấy sản phẩm."}</p>
           <Link
             href="/products"
             className="inline-block bg-[#2D5016] text-white px-8 py-3 text-xs tracking-[0.15em] font-medium hover:bg-[#3a6b1e] transition-colors"
@@ -38,21 +100,6 @@ export default function ProductDetail() {
   }
 
   const images = [product.image, product.imageHover];
-  const relatedProducts = getFeaturedProducts().filter((p) => p.id !== product.id).slice(0, 4);
-
-  const handleAddToCart = () => {
-    addItem(
-      {
-        productId: product.id,
-        name: product.name,
-        price: product.price,
-        image: product.image,
-      },
-      quantity
-    );
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
-  };
 
   return (
     <div className="min-h-screen bg-[#FAFAF5]">
