@@ -123,3 +123,14 @@ export const fetchRelatedProducts = async (id: string) => {
   const response = await fetch(getApiUrl(`/products/${id}/related`));
   return handleResponse<any[]>(response);
 };
+
+export const searchProducts = async (query: string, limit = 20) => {
+  const params = new URLSearchParams();
+  params.set('q', query);
+  if (limit) {
+    params.set('limit', String(limit));
+  }
+
+  const response = await fetch(getApiUrl(`/search?${params.toString()}`));
+  return handleResponse<{ query: string; results: any[]; count: number }>(response);
+};

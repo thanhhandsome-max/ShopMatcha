@@ -38,7 +38,7 @@ export default function Index() {
       setError(null);
 
       try {
-        const data = await fetchProductList({ limit: 20 });
+        const data = await fetchProductList({ limit: 4 });
         setFeaturedProducts(data.products.map(mapBackendProduct));
       } catch (fetchError) {
         setError("Không thể tải sản phẩm nổi bật từ backend.");

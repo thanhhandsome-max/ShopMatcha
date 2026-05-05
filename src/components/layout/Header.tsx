@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ShoppingBag, Search, Menu, X, User, LogOut } from "lucide-react";
-import { useCart } from "@/store/useCart";
-import { useAuth } from "@/contexts/AuthContext";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import CartDrawer from "@/components/shop/CartDrawer";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/store/useCart";
+import { LogOut, Menu, Search, ShoppingBag, User, X } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 
 const navLinks = [
   { href: "/", label: "HOME" },
@@ -18,6 +18,7 @@ const navLinks = [
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const totalItems = useCart((s) => s.totalItems);
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -25,6 +26,14 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      setSearchOpen(false);
+      router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
   return (
     <>
@@ -141,7 +150,7 @@ export default function Header() {
         {/* Search Bar */}
         {searchOpen && (
           <div className="border-t border-gray-100 bg-white py-4 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-2xl mx-auto relative">
+            <form onSubmit={handleSearch} className="max-w-2xl mx-auto relative">
               <input
                 type="text"
                 placeholder="Tìm kiếm sản phẩm..."
@@ -150,8 +159,10 @@ export default function Header() {
                 className="w-full border-b-2 border-gray-300 focus:border-[#2D5016] bg-transparent py-2 pr-10 text-sm outline-none transition-colors"
                 autoFocus
               />
-              <Search size={16} className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400" />
-            </div>
+              <button type="submit" className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#2D5016] transition-colors">
+                <Search size={16} />
+              </button>
+            </form>
           </div>
         )}
 

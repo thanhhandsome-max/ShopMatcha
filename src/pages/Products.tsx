@@ -7,8 +7,10 @@ import {
     FrontendProduct,
     fetchProductList,
     mapBackendProduct,
+    searchProducts,
 } from "@/lib/backend";
 import { SlidersHorizontal } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const categories = [
@@ -26,12 +28,17 @@ const sortOptions = [
 ];
 
 export default function Products() {
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get('search') || '';
+  
   const [products, setProducts] = useState<FrontendProduct[]>([]);
   const [category, setCategory] = useState("all");
   const [sort, setSort] = useState("featured");
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 8;
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -39,8 +46,15 @@ export default function Products() {
       setError(null);
 
       try {
-        const data = await fetchProductList({ limit: 100 });
-        setProducts(data.products.map(mapBackendProduct));
+        if (searchQuery.trim()) {
+          // Search products using backend search API
+          const data = await searchProducts(searchQuery, 100);
+          setProducts(data.results.map(mapBackendProduct));
+        } else {
+          // Load all products
+          const data = await fetchProductList({ limit: 100 });
+          setProducts(data.products.map(mapBackendProduct));
+        }
       } catch (fetchError) {
         setError("Không thể tải sản phẩm từ backend. Vui lòng thử lại sau.");
       } finally {
@@ -49,7 +63,7 @@ export default function Products() {
     };
 
     loadProducts();
-  }, []);
+  }, [searchQuery]);
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -76,6 +90,17 @@ export default function Products() {
     return result;
   }, [category, sort, products]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [category, sort, searchQuery]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+  const startIndex = (currentPage - 1) * productsPerPage;
+  const endIndex = startIndex + productsPerPage;
+  const currentProducts = filteredProducts.slice(startIndex, endIndex);
+
   return (
     <div className="min-h-screen bg-[#FAFAF5]">
       <Header />
@@ -84,10 +109,13 @@ export default function Products() {
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
           <h1 className="text-3xl md:text-4xl font-serif text-[#2D5016] tracking-wide mb-2">
-            Sản phẩm
+            {searchQuery ? `Kết quả tìm kiếm: "${searchQuery}"` : "Sản phẩm"}
           </h1>
           <p className="text-gray-500 text-sm tracking-wide">
-            Matcha ceremonial & trà xanh cao cấp từ Kyoto, Nhật Bản
+            {searchQuery 
+              ? `Tìm thấy ${filteredProducts.length} sản phẩm phù hợp`
+              : "Matcha ceremonial & trà xanh cao cấp từ Kyoto, Nhật Bản"
+            }
           </p>
         </div>
       </div>
@@ -136,7 +164,12 @@ export default function Products() {
 
         {/* Results Count */}
         <p className="text-xs text-gray-500 mb-6 tracking-wider">
-          {loading ? "Đang tải sản phẩm..." : `${filteredProducts.length} sản phẩm`}
+          {loading 
+            ? "Đang tải sản phẩm..." 
+            : searchQuery 
+              ? `Tìm thấy ${filteredProducts.length} sản phẩm cho "${searchQuery}"`
+              : `${filteredProducts.length} sản phẩm`
+          }
         </p>
 
         {error ? (
@@ -150,7 +183,7 @@ export default function Products() {
         ) : (
           <>
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-              {filteredProducts.map((product) => (
+              {currentProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
@@ -158,6 +191,41 @@ export default function Products() {
             {filteredProducts.length === 0 && (
               <div className="text-center py-20">
                 <p className="text-gray-500 text-sm">Không tìm thấy sản phẩm nào.</p>
+              </div>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-12">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 text-xs tracking-wider font-medium border border-gray-200 bg-white hover:border-[#2D5016] hover:text-[#2D5016] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  TRƯỚC
+                </button>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-10 h-10 text-xs tracking-wider font-medium transition-all ${
+                      currentPage === page
+                        ? "bg-[#2D5016] text-white"
+                        : "border border-gray-200 bg-white hover:border-[#2D5016] hover:text-[#2D5016]"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 text-xs tracking-wider font-medium border border-gray-200 bg-white hover:border-[#2D5016] hover:text-[#2D5016] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  SAU
+                </button>
               </div>
             )}
           </>
