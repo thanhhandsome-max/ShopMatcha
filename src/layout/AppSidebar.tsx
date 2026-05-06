@@ -51,7 +51,18 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Xem tồn kho", path: "/quan-ly-kho", pro: false },
       { name: "Tạo phiếu nghiệp vụ", path: "/quan-ly-kho/tao-phieu", pro: false },
+      { name: "Lịch sử kho", path: "/quan-ly-kho/lich-su-kho", pro: false },
     ],
+  },
+  {
+    icon: <BoxCubeIcon />,
+    name: "Quản lý đơn hàng",
+    path: "/don-hang",
+  },
+  {
+    icon: <BoxCubeIcon />,
+    name: "Quản lý khuyến mãi",
+    path: "/khuyen-mai",
   },
   {
     icon: <UserCircleIcon />,

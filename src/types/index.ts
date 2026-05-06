@@ -7,6 +7,8 @@ export interface ICuaHang {
   TenCH: string;
   DiaChi?: string;
   SDT?: string;
+  MaNVQuanLy?: string;
+  TenQuanLy?: string;
 }
 
 export interface IKhachHang {
@@ -45,6 +47,7 @@ export interface INhanVien {
   TrangThai?: string;
   DiaChi?: string;
   SDT?: string;
+  MaCH?: string;
   LuongNen?: number; // decimal
   Email?: string;
 }
@@ -147,6 +150,25 @@ export interface IKhuyenMai {
   mota?: string;
   giatrima?: number;
   thoihan?: Date | string;
+  TrangThai?: number; // 1 = active, 0 = inactive
+  NgayTao?: Date | string;
+}
+
+export interface IMaGiamGia {
+  MaGG: string;
+  TenKhuyenMai?: string;
+  Ma?: string; // Mã code giảm giá (VD: SUMMER2024, KM50)
+  GiaTriGG?: number; // Giá trị hoặc % giảm
+  LoaiGiaTriGG?: string; // 'amount' hoặc 'percent'
+  ThoiHanSuDung?: Date | string;
+  SoLuongToiDa?: number; // Số lần sử dụng tối đa
+  SoLanSuDung?: number; // Số lần đã sử dụng
+  UuTien?: number; // Ưu tiên áp dụng (cao hơn = ưu tiên cao)
+  DieuKienApDung?: string; // Mô tả điều kiện áp dụng
+  MoTa?: string;
+  TrangThai?: number; // 1 = active, 0 = inactive
+  NgayTao?: Date | string;
+  NgayCapNhat?: Date | string;
 }
 
 export interface ISanPhamAnh {
@@ -202,6 +224,46 @@ export interface IHoaDon {
   address_id?: string;
   customer_note?: string;
   NgayTao?: Date | string;
+}
+
+// =========================================================================
+// QUẢN LÝ ĐƠN HÀNG (ORDER MANAGEMENT)
+// =========================================================================
+
+export interface IDonHangQuanLy extends IHoaDon {
+  TenCuahang?: string;
+  TenNhanVien?: string;
+  TenKhachHang?: string;
+  SoDienThoai?: string;
+  KhachHangDiaChi?: string;
+  SoSanPham?: number;
+  TrangThaiTen?: string;
+  TrangThaiHuy?: boolean;
+  LyDoHuy?: string;
+  NgayHuy?: Date | string;
+}
+
+export interface IChiTietDonHang extends IChiTietHoaDon {
+  TenSanPham?: string;
+  MaCodeSp?: string;
+  Anh?: string;
+  GiaVon?: number;
+}
+
+export interface IDonHangFilter {
+  trangThai?: number;
+  cuaHang?: string;
+  startDate?: Date;
+  endDate?: Date;
+  timKiem?: string; // Tìm theo mã đơn, tên khách, SDT
+}
+
+export interface IDonHangStats {
+  totalDonHang: number;
+  tongTienDonHang: number;
+  donDangXuLy: number;
+  donHoanThanh: number;
+  donHuy: number;
 }
 
 // =========================================================================
@@ -263,4 +325,37 @@ export interface IPaymentLog {
   message?: string;
   new_data?: string; // Chứa chuỗi JSON
   created_at?: Date | string;
+}
+
+// =========================================================================
+// LỊCH SỬ NHẬP/XUẤT/CHUYỂN HÀNG
+// =========================================================================
+
+export interface ILichSuKho {
+  MaLS?: string; // Mã lịch sử (tự sinh)
+  MaSP: string;
+  TenSP?: string;
+  MaCodeSp?: string;
+  MaKho?: string; // Kho nguồn hoặc kho đích
+  TenKho?: string;
+  MaCH?: string; // Cửa hàng
+  TenCH?: string;
+  LoaiGiaoDich: 'nhap' | 'xuat' | 'chuyen'; // Loại: nhập, xuất, chuyển
+  SoLuong: number;
+  GiaTien?: number;
+  TongTien?: number;
+  MaPhieu: string; // Mã phiếu (MaPN, MaPX, MaPC)
+  MaNhanVien?: string;
+  TenNhanVien?: string;
+  GhiChu?: string;
+  NgayTao: Date | string;
+  TrangThaiGiaoDich?: number; // 0: Chờ xác nhận, 1: Đã xác nhận, 2: Hoàn thành
+}
+
+export interface ILichSuKhoDetail extends ILichSuKho {
+  ChiTietThem?: {
+    KhoXuat?: string;
+    KhoNhan?: string;
+    NhaPhanPhoi?: string;
+  };
 }

@@ -1,3 +1,5 @@
+import * as lichSuService from './lich-su-kho.service';
+
 const getBaseUrl = () => {
   if (typeof window !== 'undefined') return ''; // Client side dùng relative path
   return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'; // Server side dùng absolute path
@@ -34,6 +36,25 @@ export async function createPhieuNhap(phieuNhap: any, chiTiet: any[]) {
   });
   if (!res.ok) throw new Error('Lỗi khi tạo phiếu nhập');
   const data = await res.json();
+  
+  // Ghi lịch sử kho cho mỗi sản phẩm
+  try {
+    for (const item of chiTiet) {
+      await lichSuService.taoLichSuNhap({
+        maSP: item.MaSP,
+        soLuong: item.SoLuong,
+        giaTien: item.TongTien ? item.TongTien / item.SoLuong : undefined,
+        tongTien: item.TongTien,
+        maPhieu: data.MaPN,
+        maNhanVien: phieuNhap.MaNV,
+        ghiChu: phieuNhap.GhiChu,
+      });
+    }
+  } catch (error) {
+    console.error('Lỗi khi ghi lịch sử nhập:', error);
+    // Không throw error ở đây vì phiếu đã được tạo thành công
+  }
+  
   return data.MaPN; // Trả về MaPN từ database
 }
 
@@ -65,6 +86,26 @@ export async function createPhieuXuat(phieuXuat: any, chiTiet: any[]) {
   });
   if (!res.ok) throw new Error('Lỗi khi tạo phiếu xuất');
   const data = await res.json();
+  
+  // Ghi lịch sử kho cho mỗi sản phẩm
+  try {
+    for (const item of chiTiet) {
+      await lichSuService.taoLichSuXuat({
+        maSP: item.MaSP,
+        maCH: phieuXuat.MaCH,
+        soLuong: item.SoLuong,
+        giaTien: item.TongTien ? item.TongTien / item.SoLuong : undefined,
+        tongTien: item.TongTien,
+        maPhieu: data.MaPX,
+        maNhanVien: phieuXuat.MaNV,
+        ghiChu: phieuXuat.GhiChu,
+      });
+    }
+  } catch (error) {
+    console.error('Lỗi khi ghi lịch sử xuất:', error);
+    // Không throw error ở đây vì phiếu đã được tạo thành công
+  }
+  
   return data.MaPX; // Trả về MaPX từ database
 }
 
@@ -108,7 +149,28 @@ export async function deletePhieu(type: 'nhap' | 'xuat', id: string) {
     });
     if (!res.ok) throw new Error('Lỗi khi tạo phiếu chuyển hàng');
     const data = await res.json();
-    return data.MaPCH;
+    
+    // Ghi lịch sử kho cho mỗi sản phẩm
+    try {
+      for (const item of chiTiet) {
+        await lichSuService.taoLichSuChuyen({
+          maSP: item.MaSP,
+          maKhoXuat: phieuChuyen.MaCH_Xuat || phieuChuyen.MaKhoXuat,
+          maKhoNhan: phieuChuyen.MaCH_Nhan || phieuChuyen.MaKhoNhan,
+          soLuong: item.SoLuong,
+          giaTien: item.TongTien ? item.TongTien / item.SoLuong : undefined,
+          tongTien: item.TongTien,
+          maPhieu: data.MaPC,
+          maNhanVien: phieuChuyen.MaNV,
+          ghiChu: phieuChuyen.GhiChu,
+        });
+      }
+    } catch (error) {
+      console.error('Lỗi khi ghi lịch sử chuyển:', error);
+      // Không throw error ở đây vì phiếu đã được tạo thành công
+    }
+    
+    return data.MaPC;
   }
 // ---------------------------------------------------------
 // EXPORT ĐỐI TƯỢNG PHIEUSERVICE ĐỂ FIX LỖI BUILD
@@ -144,7 +206,7 @@ export const PhieuService = {
   // Hành động khác
   updatePhieu,
   deletePhieu,
-  
+
   getAllPhieuChuyen: () => fetch(`${API_ENDPOINT}?type=chuyen`).then(res => res.json()).then(data => data.phieu || []),
   createPhieuChuyen,
   taoPhieuChuyen: createPhieuChuyen,
