@@ -1,57 +1,44 @@
-import { ConnectionPool, Request as SQLRequest } from 'mssql';
 import { query as dbQuery } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
 // ---------------------------------------------------------
-// GET: Lấy danh sách lịch sử
+// 1. GET: LẤY DANH SÁCH LỊCH SỬ (Dùng cho Dashboard & Báo cáo)
 // ---------------------------------------------------------
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const type = searchParams.get('type'); // nhap, xuat, chuyen
-    const kho = searchParams.get('kho');
+    const type = searchParams.get('type');     // nhap, xuat, chuyen, nhan
+    const kho = searchParams.get('kho');       // MaKho hoặc MaCH
     const sanpham = searchParams.get('sanpham');
     const phieu = searchParams.get('phieu');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
     let sqlQuery = `
-      SELECT 
-        ls.MaLS,
-        ls.MaSP,
-        sp.TenSanPham,
-        sp.MaCodeSp,
-        ls.MaKho,
-        k.TenKho,
-        ls.MaCH,
-        ch.TenCH,
-        ls.LoaiGiaoDich,
-        ls.SoLuong,
-        ls.GiaTien,
-        ls.TongTien,
-        ls.MaPhieu,
-        ls.MaNhanVien,
-        nv.HoTen as TenNhanVien,
-        ls.GhiChu,
-        ls.NgayTao,
-        ls.TrangThaiGiaoDich
-      FROM lichsukho ls
-      LEFT JOIN sanpham sp ON ls.MaSP = sp.MaSP
-      LEFT JOIN kho k ON ls.MaKho = k.MaKho
-      LEFT JOIN cuahang ch ON ls.MaCH = ch.MaCH
-      LEFT JOIN nhanvien nv ON ls.MaNhanVien = nv.MaNV
-      WHERE 1=1
-    `;
+        SELECT 
+          ls.MaLS, ls.MaSP, sp.TenSanPham,
+          UPPER(ls.LoaiBienDong) as LoaiBienDong, 
+          ls.SoLuong, ls.TongTien,
+          ls.MaKho, ls.MaCH, 
+          ls.MaPhieuLienQuan, ls.MaNV, 
+          ls.NgayTao, ls.GhiChu,
+          ISNULL(ls.TrangThaiGiaoDich, 1) as TrangThaiGiaoDich
+        FROM lichsukho ls
+        LEFT JOIN sanpham sp ON ls.MaSP = sp.MaSP
+        WHERE 1=1
+      `;
 
     const params: Record<string, any> = {};
 
+    // Bộ lọc loại biến động
     if (type) {
-      sqlQuery += ` AND ls.LoaiGiaoDich = @type`;
-      params.type = type;
+      sqlQuery += ` AND ls.LoaiBienDong = @type`;
+      params.type = type.toUpperCase(); 
     }
 
+    // Bộ lọc địa điểm (Kho hoặc Cửa hàng)
     if (kho) {
-      sqlQuery += ` AND ls.MaKho = @kho`;
+      sqlQuery += ` AND (ls.MaKho = @kho OR ls.MaCH = @kho)`;
       params.kho = kho;
     }
 
@@ -61,7 +48,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (phieu) {
-      sqlQuery += ` AND ls.MaPhieu = @phieu`;
+      sqlQuery += ` AND ls.MaPhieuLienQuan = @phieu`;
       params.phieu = phieu;
     }
 
@@ -85,175 +72,108 @@ export async function GET(req: NextRequest) {
       count: lichSu?.length || 0,
     });
   } catch (error: any) {
-    console.error('Error getting lichsu kho:', error);
-    return NextResponse.json(
-      { ok: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 }
 
 // ---------------------------------------------------------
-// POST: Tạo lịch sử mới
+// 2. POST: TẠO BẢN GHI LỊCH SỬ (Đã fix logic TrangThai)
 // ---------------------------------------------------------
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      type, // 'nhap', 'xuat', 'chuyen'
-      maSP,
-      maCH,
-      maKho,
-      maKhoXuat,
-      maKhoNhan,
-      soLuong,
-      giaTien,
-      tongTien,
-      maPhieu,
-      maNhanVien,
-      ghiChu,
+      type, maSP, maCH, maKho, soLuong, tongTien, 
+      maPhieu, maNhanVien, ghiChu, trangThai 
     } = body;
 
-    if (!type || !maSP || !soLuong || !maPhieu) {
-      return NextResponse.json(
-        { ok: false, error: 'Thiếu thông tin bắt buộc' },
-        { status: 400 }
-      );
-    }
-
-    // Tạo mã lịch sử tự động
-    const lastLS = await dbQuery(
-      'SELECT TOP 1 MaLS FROM lichsukho ORDER BY LEN(MaLS) DESC, MaLS DESC'
-    );
-    let nextStt = 1;
-    if (lastLS && lastLS[0]?.MaLS) {
-      const lastId = lastLS[0].MaLS.toString().replace('LS', '').trim();
-      nextStt = parseInt(lastId) + 1;
-    }
+    // 2.1 Tạo mã lịch sử tự động (LS00001)
+    const lastLS = await dbQuery('SELECT TOP 1 MaLS FROM lichsukho ORDER BY LEN(MaLS) DESC, MaLS DESC');
+      let nextStt = 1;
+      if (lastLS && lastLS[0]?.MaLS) {
+        const match = lastLS[0].MaLS.toString().match(/\d+/);
+        if (match) nextStt = parseInt(match[0]) + 1;
+      }
     const MaLS = `LS${String(nextStt).padStart(5, '0')}`;
 
-    // Lọc tham số dựa trên loại giao dịch
+    // 2.2 Thiết lập dữ liệu ghi log
     const insertParams: Record<string, any> = {
       MaLS,
       MaSP: maSP,
-      LoaiGiaoDich: type,
       SoLuong: Number(soLuong),
-      GiaTien: giaTien ? Number(giaTien) : null,
-      TongTien: tongTien ? Number(tongTien) : null,
-      MaPhieu: maPhieu,
-      MaNhanVien: maNhanVien || null,
+      TongTien: Number(tongTien) || 0,
+      MaPhieuLienQuan: maPhieu,
+      MaNV: maNhanVien || null,
       GhiChu: ghiChu || null,
       NgayTao: new Date(),
-      TrangThaiGiaoDich: 1,
-      MaKho: null,
-      MaCH: null,
+      // LOGIC QUAN TRỌNG: Lấy trangThai từ API Phieu gửi sang (0 hoặc 1)
+      TrangThaiGiaoDich: trangThai !== undefined ? Number(trangThai) : 1,
+      MaKho: maKho || null,
+      MaCH: maCH || null,
+      LoaiBienDong: type.toUpperCase()
     };
-
-    // Tùy theo loại giao dịch
-    if (type === 'nhap') {
-      insertParams.MaKho = maKho || null;
-    } else if (type === 'xuat') {
-      insertParams.MaCH = maCH || null;
-    } else if (type === 'chuyen') {
-      insertParams.MaKho = maKhoXuat || null; // Kho xuất
-      insertParams.MaCH = maKhoNhan || null; // Kho nhận
-    }
 
     const insertSQL = `
       INSERT INTO lichsukho (
-        MaLS, MaSP, MaKho, MaCH, LoaiGiaoDich, SoLuong, 
-        GiaTien, TongTien, MaPhieu, MaNhanVien, GhiChu, 
+        MaLS, MaSP, MaKho, MaCH, LoaiBienDong, SoLuong, 
+        TongTien, MaPhieuLienQuan, MaNV, GhiChu, 
         NgayTao, TrangThaiGiaoDich
       ) VALUES (
-        @MaLS, @MaSP, @MaKho, @MaCH, @LoaiGiaoDich, @SoLuong,
-        @GiaTien, @TongTien, @MaPhieu, @MaNhanVien, @GhiChu,
+        @MaLS, @MaSP, @MaKho, @MaCH, @LoaiBienDong, @SoLuong,
+        @TongTien, @MaPhieuLienQuan, @MaNV, @GhiChu,
         @NgayTao, @TrangThaiGiaoDich
       )
     `;
 
     await dbQuery(insertSQL, insertParams);
 
-    return NextResponse.json({
-      ok: true,
-      maLS: MaLS,
-      message: 'Lịch sử kho được tạo thành công',
-    });
+    return NextResponse.json({ ok: true, maLS: MaLS });
   } catch (error: any) {
-    console.error('Error creating lichsu kho:', error);
-    return NextResponse.json(
-      { ok: false, error: error.message },
-      { status: 500 }
-    );
+    console.error('[LS KHO API POST ERROR]', error);
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 }
 
 // ---------------------------------------------------------
-// PUT: Cập nhật lịch sử
+// 3. PUT: CẬP NHẬT TRẠNG THÁI (Khi nhận hàng thành công)
 // ---------------------------------------------------------
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { maLS, trangThai, ghiChu } = body;
+    const { maPhieu, trangThai } = body;
 
-    if (!maLS) {
-      return NextResponse.json(
-        { ok: false, error: 'Cần cung cấp MaLS' },
-        { status: 400 }
-      );
-    }
+    if (!maPhieu) return NextResponse.json({ ok: false, error: 'Thiếu mã phiếu đối ứng' }, { status: 400 });
 
-    const updateSQL = `
-      UPDATE lichsukho 
-      SET TrangThaiGiaoDich = @trangThai, GhiChu = @ghiChu
-      WHERE MaLS = @maLS
-    `;
-
-    await dbQuery(updateSQL, {
-      maLS,
-      trangThai: trangThai ?? 1,
-      ghiChu: ghiChu || null,
-    });
-
-    return NextResponse.json({
-      ok: true,
-      message: 'Lịch sử kho được cập nhật thành công',
-    });
-  } catch (error: any) {
-    console.error('Error updating lichsu kho:', error);
-    return NextResponse.json(
-      { ok: false, error: error.message },
-      { status: 500 }
+    // Cập nhật tất cả các dòng lịch sử liên quan đến mã phiếu này
+    // (Dùng để chuyển trạng thái từ 0 sang 1 cho phiếu chuyển)
+    await dbQuery(
+      `UPDATE lichsukho SET TrangThaiGiaoDich = @trangThai WHERE MaPhieuLienQuan = @maPhieu`,
+      { maPhieu, trangThai: Number(trangThai) }
     );
+
+    return NextResponse.json({ ok: true, message: 'Đồng bộ lịch sử thành công' });
+  } catch (error: any) {
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 }
 
 // ---------------------------------------------------------
-// DELETE: Xóa lịch sử
+// 4. DELETE: XÓA LỊCH SỬ
 // ---------------------------------------------------------
 export async function DELETE(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { maLS } = body;
+    const { searchParams } = new URL(req.url);
+    const maLS = searchParams.get('maLS');
+    const maPhieu = searchParams.get('maPhieu');
 
-    if (!maLS) {
-      return NextResponse.json(
-        { ok: false, error: 'Cần cung cấp MaLS' },
-        { status: 400 }
-      );
+    if (maLS) {
+      await dbQuery('DELETE FROM lichsukho WHERE MaLS = @maLS', { maLS });
+    } else if (maPhieu) {
+      await dbQuery('DELETE FROM lichsukho WHERE MaPhieuLienQuan = @maPhieu', { maPhieu });
     }
 
-    const deleteSQL = 'DELETE FROM lichsukho WHERE MaLS = @maLS';
-    await dbQuery(deleteSQL, { maLS });
-
-    return NextResponse.json({
-      ok: true,
-      message: 'Lịch sử kho được xóa thành công',
-    });
+    return NextResponse.json({ ok: true });
   } catch (error: any) {
-    console.error('Error deleting lichsu kho:', error);
-    return NextResponse.json(
-      { ok: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 }

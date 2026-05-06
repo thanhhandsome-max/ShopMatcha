@@ -1,31 +1,3 @@
-// import { query as dbQuery } from '@/lib/db';
-// import { NextRequest, NextResponse } from 'next/server';
-
-// export async function PUT(
-//   req: NextRequest,
-//   { params }: { params: { maHD: string } }
-// ) {
-//   try {
-//     const maHD = params.maHD;
-//     const body = await req.json();
-//     const { trangThai, ghiChu } = body;
-
-//     await dbQuery(
-//       `UPDATE hoadon SET TrangThai = @trangThai WHERE MaHD = @maHD`,
-//       { trangThai, maHD }
-//     );
-
-//     return NextResponse.json({
-//       ok: true,
-//       message: 'Cập nhật trạng thái thành công',
-//     });
-//   } catch (error: any) {
-//     return NextResponse.json(
-//       { ok: false, error: error.message },
-//       { status: 500 }
-//     );
-//   }
-// }
 import { query as dbQuery } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 

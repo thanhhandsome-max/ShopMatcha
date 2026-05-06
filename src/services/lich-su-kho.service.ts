@@ -1,180 +1,124 @@
-const getBaseUrl = () => {
-  if (typeof window !== 'undefined') return ''; // Client side dùng relative path
-  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'; // Server side dùng absolute path
+/**
+ * Service quản lý Lịch sử biến động kho - ShopMatcha
+ */
+
+const API_URL = '/api/lich-su-kho';
+
+// 1. Tìm kiếm lịch sử với bộ lọc (Dùng cho Table & Stats)
+export const searchLichSu = async (filter: any) => {
+  try {
+    const params = new URLSearchParams();
+    if (filter.type) params.append('type', filter.type);
+    if (filter.kho) params.append('kho', filter.kho);
+    if (filter.sanpham) params.append('sanpham', filter.sanpham);
+    if (filter.phieu) params.append('phieu', filter.phieu);
+    if (filter.startDate) params.append('startDate', filter.startDate);
+    if (filter.endDate) params.append('endDate', filter.endDate);
+
+    const res = await fetch(`${API_URL}?${params.toString()}`);
+    const data = await res.json();
+    
+    if (!res.ok) throw new Error(data.error || 'Lỗi khi tải lịch sử kho');
+    
+    return data.lichSu || [];
+  } catch (error) {
+    console.error('Service Search Error:', error);
+    throw error;
+  }
 };
 
-const API_ENDPOINT = `${getBaseUrl()}/api/lich-su-kho`;
+// 2. Ghi lịch sử Chuyển hàng (Mặc định: Chờ xử lý - 0)
+export const taoLichSuChuyen = async (data: any) => {
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'chuyen',
+        maSP: data.maSP,
+        maCH: data.maCH, // Cửa hàng xuất
+        soLuong: data.soLuong,
+        tongTien: data.tongTien,
+        maPhieu: data.maPhieu,
+        maNhanVien: data.maNhanVien,
+        trangthai: 0, // ÉP LOGIC: Phiếu chuyển mới luôn là Chờ xử lý
+        ghiChu: data.ghiChu || 'Chờ xác nhận nhập kho'
+      }),
+    });
 
-// ---------------------------------------------------------
-// LẤY DANH SÁCH LỊCH SỬ
-// ---------------------------------------------------------
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Lỗi ghi lịch sử chuyển');
+    
+    return result;
+  } catch (error) {
+    console.error('Service Post Chuyen Error:', error);
+    throw error;
+  }
+};
 
-/** Lấy toàn bộ lịch sử nhập/xuất/chuyển hàng */
-export async function getAllLichSuKho() {
-  const res = await fetch(`${API_ENDPOINT}`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Không thể tải lịch sử kho');
-  const data = await res.json();
-  return data.lichSu || [];
-}
+// 3. Ghi lịch sử Nhận hàng (Mặc định: Hoàn thành - 1)
+export const taoLichSuNhan = async (data: any) => {
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'nhan',
+        maSP: data.maSP,
+        maCH: data.maCH, // Cửa hàng nhận
+        soLuong: data.soLuong,
+        tongTien: data.tongTien,
+        maPhieu: data.maPhieu,
+        maNhanVien: data.maNhanVien,
+        trangthai: 1, // ÉP LOGIC: Phiếu nhận luôn là Hoàn thành
+        ghiChu: data.ghiChu || `Nhận hàng từ phiếu ${data.maPC_Goc}`
+      }),
+    });
 
-/** Lấy lịch sử theo loại giao dịch (nhap, xuat, chuyen) */
-export async function getLichSuByType(type: 'nhap' | 'xuat' | 'chuyen') {
-  const res = await fetch(`${API_ENDPOINT}?type=${type}`, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`Không thể tải lịch sử ${type}`);
-  const data = await res.json();
-  return data.lichSu || [];
-}
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Lỗi ghi lịch sử nhận');
+    
+    return result;
+  } catch (error) {
+    console.error('Service Post Nhan Error:', error);
+    throw error;
+  }
+};
 
-/** Lấy lịch sử theo kho */
-export async function getLichSuByKho(maKho: string) {
-  const res = await fetch(`${API_ENDPOINT}?kho=${maKho}`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Không thể tải lịch sử kho');
-  const data = await res.json();
-  return data.lichSu || [];
-}
+// 4. Cập nhật trạng thái lịch sử (Đồng bộ khi nhận hàng thành công)
+export const syncTrangThaiLichSu = async (maPhieu: string, trangthai: number) => {
+  try {
+    const res = await fetch(API_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        maPhieu: maPhieu,
+        trangthai: trangthai
+      }),
+    });
 
-/** Lấy lịch sử theo sản phẩm */
-export async function getLichSuBySanPham(maSP: string) {
-  const res = await fetch(`${API_ENDPOINT}?sanpham=${maSP}`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Không thể tải lịch sử sản phẩm');
-  const data = await res.json();
-  return data.lichSu || [];
-}
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Lỗi đồng bộ trạng thái');
+    
+    return result;
+  } catch (error) {
+    console.error('Service Sync Error:', error);
+    throw error;
+  }
+};
 
-/** Lấy lịch sử theo mã phiếu */
-export async function getLichSuByPhieu(maPhieu: string) {
-  const res = await fetch(`${API_ENDPOINT}?phieu=${maPhieu}`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Không thể tải lịch sử phiếu');
-  const data = await res.json();
-  return data.lichSu || [];
-}
+// 5. Xóa lịch sử (Dùng khi xóa phiếu)
+export const xoaLichSuTheoPhieu = async (maPhieu: string) => {
+  try {
+    const res = await fetch(`${API_URL}?maPhieu=${maPhieu}`, {
+      method: 'DELETE',
+    });
 
-/** Lấy chi tiết một bản ghi lịch sử */
-export async function getLichSuDetail(maLS: string) {
-  const res = await fetch(`${API_ENDPOINT}/${maLS}`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Không thể tải chi tiết lịch sử');
-  return await res.json();
-}
-
-// ---------------------------------------------------------
-// TẠO LỊCH SỬ MỚI
-// ---------------------------------------------------------
-
-/** Ghi lịch sử nhập hàng */
-export async function taoLichSuNhap(data: {
-  maSP: string;
-  soLuong: number;
-  giaTien?: number;
-  tongTien?: number;
-  maPhieu: string; // MaPN
-  maNhanVien?: string;
-  ghiChu?: string;
-}) {
-  const res = await fetch(API_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      type: 'nhap',
-      ...data,
-    }),
-  });
-  if (!res.ok) throw new Error('Lỗi khi ghi lịch sử nhập');
-  return await res.json();
-}
-
-/** Ghi lịch sử xuất hàng */
-export async function taoLichSuXuat(data: {
-  maSP: string;
-  maCH: string; // Cửa hàng
-  soLuong: number;
-  giaTien?: number;
-  tongTien?: number;
-  maPhieu: string; // MaPX
-  maNhanVien?: string;
-  ghiChu?: string;
-}) {
-  const res = await fetch(API_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      type: 'xuat',
-      ...data,
-    }),
-  });
-  if (!res.ok) throw new Error('Lỗi khi ghi lịch sử xuất');
-  return await res.json();
-}
-
-/** Ghi lịch sử chuyển hàng */
-export async function taoLichSuChuyen(data: {
-  maSP: string;
-  maKhoXuat: string;
-  maKhoNhan: string;
-  soLuong: number;
-  giaTien?: number;
-  tongTien?: number;
-  maPhieu: string; // MaPC
-  maNhanVien?: string;
-  ghiChu?: string;
-}) {
-  const res = await fetch(API_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      type: 'chuyen',
-      ...data,
-    }),
-  });
-  if (!res.ok) throw new Error('Lỗi khi ghi lịch sử chuyển');
-  return await res.json();
-}
-
-// ---------------------------------------------------------
-// CẬP NHẬT & XÓA
-// ---------------------------------------------------------
-
-/** Cập nhật trạng thái lịch sử */
-export async function updateLichSu(maLS: string, trangThai: number, ghiChu?: string) {
-  const res = await fetch(`${API_ENDPOINT}/${maLS}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ trangThai, ghiChu }),
-  });
-  if (!res.ok) throw new Error('Không thể cập nhật lịch sử');
-  return await res.json();
-}
-
-/** Xóa bản ghi lịch sử */
-export async function deleteLichSu(maLS: string) {
-  const res = await fetch(`${API_ENDPOINT}/${maLS}`, {
-    method: 'DELETE',
-  });
-  if (!res.ok) throw new Error('Không thể xóa lịch sử');
-  return await res.json();
-}
-
-// ---------------------------------------------------------
-// THỐNG KÊ & BÁO CÁO
-// ---------------------------------------------------------
-
-/** Lấy thống kê nhập/xuất theo thời gian */
-export async function getThongKeGiaoDich(startDate?: Date, endDate?: Date) {
-  const params = new URLSearchParams();
-  if (startDate) params.append('startDate', startDate.toISOString());
-  if (endDate) params.append('endDate', endDate.toISOString());
-
-  const res = await fetch(`${API_ENDPOINT}/thongke?${params.toString()}`, {
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error('Không thể lấy thống kê');
-  return await res.json();
-}
-
-/** Lấy thống kê tồn kho theo sản phẩm */
-export async function getThongKeSanPham(maSP: string) {
-  const res = await fetch(`${API_ENDPOINT}/thongke/sanpham/${maSP}`, {
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error('Không thể lấy thống kê sản phẩm');
-  return await res.json();
-}
+    if (!res.ok) throw new Error('Không thể xóa lịch sử liên quan');
+    
+    return await res.json();
+  } catch (error) {
+    console.error('Service Delete Error:', error);
+    throw error;
+  }
+};

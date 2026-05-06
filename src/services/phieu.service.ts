@@ -1,213 +1,104 @@
 import * as lichSuService from './lich-su-kho.service';
 
-const getBaseUrl = () => {
-  if (typeof window !== 'undefined') return ''; // Client side dùng relative path
-  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'; // Server side dùng absolute path
+const API_URL = '/api/phieu';
+
+/**
+ * SERVICE QUẢN LÝ PHIẾU (FRONTEND) - SHOPMATCHA
+ * Điều phối luồng dữ liệu giữa API Phiếu và API Lịch sử kho
+ */
+
+// 1. Lấy danh sách phiếu theo loại (nhap, xuat, chuyen, nhan)
+export const getPhieuList = async (type: string) => {
+  const res = await fetch(`${API_URL}?type=${type}`);
+  const data = await res.json();
+  return data.ok ? data.phieu : [];
 };
 
-const API_ENDPOINT = `${getBaseUrl()}/api/phieu`;
-
-// ---------------------------------------------------------
-// CÁC HÀM XỬ LÝ PHIẾU NHẬP
-// ---------------------------------------------------------
-
-/** Lấy danh sách phiếu nhập */
-export async function getPhieuNhapList() {
-  const res = await fetch(`${API_ENDPOINT}?type=nhap`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Không thể tải danh sách phiếu nhập');
+// 2. Lấy chi tiết sản phẩm của một phiếu
+export const getPhieuDetail = async (type: string, id: string) => {
+  const res = await fetch(`${API_URL}?type=${type}&maphieu=${id}&chitiet=true`);
   const data = await res.json();
-  // Trả về mảng phiếu dựa trên cấu trúc { ok: true, phieu: [...] } từ route.ts
-  return data.phieu || [];
-}
+  return data.ok ? data.chitiet : [];
+};
 
-/** Lấy chi tiết một phiếu nhập (Bao gồm thông tin phiếu và danh sách sản phẩm) */
-export async function getPhieuNhapDetail(MaPN: string) {
-  const res = await fetch(`${API_ENDPOINT}?type=nhap&maphieu=${MaPN}&chitiet=true`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Không thể tải chi tiết phiếu nhập');
-  return await res.json();
-}
-
-/** Tạo phiếu nhập mới và cập nhật tồn kho */
-export async function createPhieuNhap(phieuNhap: any, chiTiet: any[]) {
-  const res = await fetch(API_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 'nhap', phieu: phieuNhap, chitiet: chiTiet }),
-  });
-  if (!res.ok) throw new Error('Lỗi khi tạo phiếu nhập');
-  const data = await res.json();
-  
-  // Ghi lịch sử kho cho mỗi sản phẩm
+// 3. HÀM TẠO PHIẾU TỔNG HỢP (Xử lý đa nghiệp vụ)
+export const createPhieu = async (type: string, phieuData: any, chiTiet: any[]) => {
   try {
-    for (const item of chiTiet) {
-      await lichSuService.taoLichSuNhap({
-        maSP: item.MaSP,
-        soLuong: item.SoLuong,
-        giaTien: item.TongTien ? item.TongTien / item.SoLuong : undefined,
-        tongTien: item.TongTien,
-        maPhieu: data.MaPN,
-        maNhanVien: phieuNhap.MaNV,
-        ghiChu: phieuNhap.GhiChu,
-      });
-    }
-  } catch (error) {
-    console.error('Lỗi khi ghi lịch sử nhập:', error);
-    // Không throw error ở đây vì phiếu đã được tạo thành công
-  }
-  
-  return data.MaPN; // Trả về MaPN từ database
-}
-
-// ---------------------------------------------------------
-// CÁC HÀM XỬ LÝ PHIẾU XUẤT
-// ---------------------------------------------------------
-
-/** Lấy danh sách phiếu xuất */
-export async function getPhieuXuatList() {
-  const res = await fetch(`${API_ENDPOINT}?type=xuat`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Không thể tải danh sách phiếu xuất');
-  const data = await res.json();
-  return data.phieu || [];
-}
-
-/** Lấy chi tiết một phiếu xuất */
-export async function getPhieuXuatDetail(MaPX: string) {
-  const res = await fetch(`${API_ENDPOINT}?type=xuat&maphieu=${MaPX}&chitiet=true`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Không thể tải chi tiết phiếu xuất');
-  return await res.json();
-}
-
-/** Tạo phiếu xuất mới */
-export async function createPhieuXuat(phieuXuat: any, chiTiet: any[]) {
-  const res = await fetch(API_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 'xuat', phieu: phieuXuat, chitiet: chiTiet }),
-  });
-  if (!res.ok) throw new Error('Lỗi khi tạo phiếu xuất');
-  const data = await res.json();
-  
-  // Ghi lịch sử kho cho mỗi sản phẩm
-  try {
-    for (const item of chiTiet) {
-      await lichSuService.taoLichSuXuat({
-        maSP: item.MaSP,
-        maCH: phieuXuat.MaCH,
-        soLuong: item.SoLuong,
-        giaTien: item.TongTien ? item.TongTien / item.SoLuong : undefined,
-        tongTien: item.TongTien,
-        maPhieu: data.MaPX,
-        maNhanVien: phieuXuat.MaNV,
-        ghiChu: phieuXuat.GhiChu,
-      });
-    }
-  } catch (error) {
-    console.error('Lỗi khi ghi lịch sử xuất:', error);
-    // Không throw error ở đây vì phiếu đã được tạo thành công
-  }
-  
-  return data.MaPX; // Trả về MaPX từ database
-}
-
-// ---------------------------------------------------------
-// CÁC HÀM CẬP NHẬT VÀ XÓA
-// ---------------------------------------------------------
-
-export async function updatePhieu(type: 'nhap' | 'xuat', id: string, data: any) {
-  const res = await fetch(API_ENDPOINT, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type, maphieu: id, phieu: data }),
-  });
-  if (!res.ok) throw new Error(`Không thể cập nhật phiếu ${type}`);
-  return await res.json();
-}
-
-export async function deletePhieu(type: 'nhap' | 'xuat', id: string) {
-  const res = await fetch(API_ENDPOINT, {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type, maphieu: id }),
-  });
-
-  // Kiểm tra nếu Server trả về lỗi không phải JSON (như lỗi 500 kèm text)
-  if (!res.ok) {
-    const errorText = await res.text(); // Đọc dạng text thay vì JSON để tránh crash
-    throw new Error(errorText || `Không thể xóa phiếu ${type}`);
-  }
-
-  // Kiểm tra xem phản hồi có nội dung không trước khi .json()
-  const text = await res.text();
-  return text ? JSON.parse(text) : { ok: true };
-}
-
-  export async function createPhieuChuyen(phieuChuyen: any, chiTiet: any[]) {
-    const res = await fetch(API_ENDPOINT, {
+    // BƯỚC 1: Tạo phiếu chính trong DB nghiệp vụ
+    const res = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'chuyen', phieu: phieuChuyen, chitiet: chiTiet }),
+      body: JSON.stringify({ type, phieu: phieuData, chitiet: chiTiet }),
     });
-    if (!res.ok) throw new Error('Lỗi khi tạo phiếu chuyển hàng');
-    const data = await res.json();
-    
-    // Ghi lịch sử kho cho mỗi sản phẩm
-    try {
-      for (const item of chiTiet) {
+
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Lỗi khi tạo phiếu');
+
+    const maPhieuMoi = result.MaPhieu;
+
+    // BƯỚC 2: Ghi Lịch sử kho cho từng sản phẩm (Để Dashboard nhảy số)
+    for (const item of chiTiet) {
+      const historyPayload = {
+        maSP: item.MaSP,
+        soLuong: item.SoLuong,
+        tongTien: item.TongTien || (item.DonGia * item.SoLuong) || 0,
+        maPhieu: maPhieuMoi,
+        maNhanVien: phieuData.MaNV,
+      };
+
+      if (type === 'nhap') {
+        await lichSuService.searchLichSu({ ...historyPayload, type: 'nhap', maKho: phieuData.MaKho });
+      } 
+      else if (type === 'xuat') {
+        await lichSuService.searchLichSu({ ...historyPayload, type: 'xuat', maKho: phieuData.MaKho, maCH: phieuData.MaCH });
+      } 
+      else if (type === 'chuyen') {
+        // Ghi lịch sử chuyển với trạng thái 0 (Chờ xử lý)
         await lichSuService.taoLichSuChuyen({
-          maSP: item.MaSP,
-          maKhoXuat: phieuChuyen.MaCH_Xuat || phieuChuyen.MaKhoXuat,
-          maKhoNhan: phieuChuyen.MaCH_Nhan || phieuChuyen.MaKhoNhan,
-          soLuong: item.SoLuong,
-          giaTien: item.TongTien ? item.TongTien / item.SoLuong : undefined,
-          tongTien: item.TongTien,
-          maPhieu: data.MaPC,
-          maNhanVien: phieuChuyen.MaNV,
-          ghiChu: phieuChuyen.GhiChu,
+          ...historyPayload,
+          maCH: phieuData.MaCH_Xuat,
+        });
+      } 
+      else if (type === 'nhan') {
+        // Ghi lịch sử nhận với trạng thái 1 (Hoàn thành)
+        await lichSuService.taoLichSuNhan({
+          ...historyPayload,
+          maCH: phieuData.MaCH,
+          maPC_Goc: phieuData.MaPC
         });
       }
-    } catch (error) {
-      console.error('Lỗi khi ghi lịch sử chuyển:', error);
-      // Không throw error ở đây vì phiếu đã được tạo thành công
     }
-    
-    return data.MaPC;
+
+    // BƯỚC 3: ĐẶC BIỆT - Nếu là phiếu Nhận, tiến hành đồng bộ trạng thái phiếu Chuyển gốc
+    if (type === 'nhan' && phieuData.MaPC) {
+      await lichSuService.syncTrangThaiLichSu(phieuData.MaPC.trim(), 1);
+      console.log(`[ShopMatcha] Đã đồng bộ trạng thái Hoàn thành cho phiếu gốc: ${phieuData.MaPC}`);
+    }
+
+    return maPhieuMoi;
+  } catch (error: any) {
+    console.error('Create Phieu Flow Error:', error);
+    throw error;
   }
-// ---------------------------------------------------------
-// EXPORT ĐỐI TƯỢNG PHIEUSERVICE ĐỂ FIX LỖI BUILD
-// ---------------------------------------------------------
+};
 
-export const PhieuService = {
-  // Danh sách nhập
-  getPhieuNhapList,
-  getAllPhieuNhap: getPhieuNhapList,
-  
-  // Chi tiết nhập
-  getPhieuNhapDetail,
-  getPhieuNhap: getPhieuNhapDetail,
-  getChiTietPhieuNhap: getPhieuNhapDetail,
-  
-  // Tạo nhập
-  createPhieuNhap,
-  taoPhieuNhap: createPhieuNhap,
+// 4. Xóa phiếu và dọn dẹp lịch sử
+export const deletePhieu = async (type: string, id: string) => {
+  try {
+    const res = await fetch(API_URL, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, maphieu: id }),
+    });
 
-  // Danh sách xuất
-  getPhieuXuatList,
-  getAllPhieuXuat: getPhieuXuatList,
+    if (res.ok) {
+      // Xóa luôn các bản ghi lịch sử liên quan để sạch dữ liệu
+      await lichSuService.xoaLichSuTheoPhieu(id);
+    }
 
-  // Chi tiết xuất
-  getPhieuXuatDetail,
-  getPhieuXuat: getPhieuXuatDetail,
-  getChiTietPhieuXuat: getPhieuXuatDetail,
-
-  // Tạo xuất
-  createPhieuXuat,
-  taoPhieuXuat: createPhieuXuat,
-
-  // Hành động khác
-  updatePhieu,
-  deletePhieu,
-
-  getAllPhieuChuyen: () => fetch(`${API_ENDPOINT}?type=chuyen`).then(res => res.json()).then(data => data.phieu || []),
-  createPhieuChuyen,
-  taoPhieuChuyen: createPhieuChuyen,
+    return await res.json();
+  } catch (error) {
+    console.error('Delete Phieu Error:', error);
+    throw error;
+  }
 };

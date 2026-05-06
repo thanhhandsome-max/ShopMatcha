@@ -1,189 +1,9 @@
-// 'use client';
-
-// import { useState, useEffect } from 'react';
-
-// interface PhieuNhap {
-//   MaPN: string;
-//   MaNPP: string;
-//   MaNV: string;
-//   TongTien: number;
-//   NgayTao: string;
-//   TrangThai: number;
-// }
-
-// interface PhieuXuat {
-//   MaPX: string;
-//   MaNV: string;
-//   MaCH: string;
-//   TongTien: number;
-//   NgayTao: string;
-//   TrangThai: number;
-// }
-
-// export default function DanhSachPhieuForm({ type = 'nhap' }: { type: 'nhap' | 'xuat' }) {
-//   const [phieu, setPhieu] = useState<any[]>([]);
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState<string | null>(null);
-//   const [selectedPhieu, setSelectedPhieu] = useState<string | null>(null);
-//   const [chitietVisible, setChitietVisible] = useState(false);
-//   const [chitiet, setChitiet] = useState<any[]>([]);
-
-//   useEffect(() => {
-//     loadPhieu();
-//   }, [type]);
-
-//   const loadPhieu = async () => {
-//     setLoading(true);
-//     setError(null);
-//     try {
-//       const res = await fetch(`/api/phieu?type=${type}`);
-//       const data = await res.json();
-//       if (data.ok) {
-//         setPhieu(Array.isArray(data.phieu) ? data.phieu : []);
-//       } else {
-//         setError(data.error || 'Không thể tải danh sách phiếu');
-//       }
-//     } catch (err: any) {
-//       setError(err.message || 'Lỗi không xác định');
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const loadChitiet = async (maphieu: string) => {
-//     try {
-//       const res = await fetch(`/api/phieu?type=${type}&maphieu=${maphieu}&chitiet=true`);
-//       const data = await res.json();
-//       if (data.ok) {
-//         setChitiet(Array.isArray(data.chitiet) ? data.chitiet : []);
-//         setChitietVisible(true);
-//       } else {
-//         setError(data.error || 'Không thể tải chi tiết');
-//       }
-//     } catch (err: any) {
-//       setError(err.message || 'Lỗi không xác định');
-//     }
-//   };
-
-//   const handleXoa = async (maphieu: string) => {
-//     if (!window.confirm('Bạn chắc chắn muốn xóa phiếu này?')) return;
-//     try {
-//       const res = await fetch('/api/phieu', {
-//         method: 'DELETE',
-//         headers: { 'Content-Type': 'application/json' },
-//         body: JSON.stringify({ type, maphieu }),
-//       });
-//       const data = await res.json();
-//       if (data.ok) {
-//         loadPhieu();
-//       } else {
-//         setError(data.error || 'Xóa thất bại');
-//       }
-//     } catch (err: any) {
-//       setError(err.message || 'Lỗi không xác định');
-//     }
-//   };
-
-//   return (
-//     <div className="bg-white rounded-xl p-6 shadow-theme-sm max-w-4xl mx-auto mt-8">
-//       <div className="flex justify-between items-center mb-6">
-//         <h2 className="text-lg font-semibold">{type === 'nhap' ? 'Danh sách phiếu nhập' : 'Danh sách phiếu xuất'}</h2>
-//         <button onClick={loadPhieu} className="btn btn-primary" disabled={loading}>
-//           {loading ? 'Đang tải...' : 'Tải lại'}
-//         </button>
-//       </div>
-
-//       {error && <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-lg">{error}</div>}
-
-//       {phieu.length === 0 ? (
-//         <div className="text-center py-8 text-gray-500">
-//           Không có phiếu {type === 'nhap' ? 'nhập' : 'xuất'} nào
-//         </div>
-//       ) : (
-//         <div className="overflow-x-auto">
-//           <table className="w-full border-collapse">
-//             <thead>
-//               <tr className="bg-gray-50">
-//                 <th className="border border-gray-200 px-4 py-2 text-left">Mã phiếu</th>
-//                 <th className="border border-gray-200 px-4 py-2 text-left">Ngày tạo</th>
-//                 <th className="border border-gray-200 px-4 py-2 text-left">Tổng tiền</th>
-//                 <th className="border border-gray-200 px-4 py-2 text-left">Trạng thái</th>
-//                 <th className="border border-gray-200 px-4 py-2 text-center">Hành động</th>
-//               </tr>
-//             </thead>
-//             <tbody>
-//               {phieu.map((p: any) => (
-//                 <tr key={p[type === 'nhap' ? 'MaPN' : 'MaPX']} className="hover:bg-gray-50">
-//                   <td className="border border-gray-200 px-4 py-2 font-medium">{p[type === 'nhap' ? 'MaPN' : 'MaPX']}</td>
-//                   <td className="border border-gray-200 px-4 py-2">{new Date(p.NgayTao).toLocaleDateString('vi-VN')}</td>
-//                   <td className="border border-gray-200 px-4 py-2">{p.TongTien?.toLocaleString('vi-VN')} ₫</td>
-//                   <td className="border border-gray-200 px-4 py-2">
-//                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${p.TrangThai === 1 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-//                       {p.TrangThai === 1 ? 'Hoàn thành' : 'Chưa hoàn thành'}
-//                     </span>
-//                   </td>
-//                   <td className="border border-gray-200 px-4 py-2 text-center">
-//                     <button
-//                       onClick={() => {
-//                         setSelectedPhieu(p[type === 'nhap' ? 'MaPN' : 'MaPX']);
-//                         loadChitiet(p[type === 'nhap' ? 'MaPN' : 'MaPX']);
-//                       }}
-//                       className="btn btn-sm btn-info mr-2"
-//                     >
-//                       Chi tiết
-//                     </button>
-//                     <button onClick={() => handleXoa(p[type === 'nhap' ? 'MaPN' : 'MaPX'])} className="btn btn-sm btn-danger">
-//                       Xóa
-//                     </button>
-//                   </td>
-//                 </tr>
-//               ))}
-//             </tbody>
-//           </table>
-//         </div>
-//       )}
-
-//       {chitietVisible && selectedPhieu && (
-//         <div className="mt-8 border-t pt-6">
-//           <div className="flex justify-between items-center mb-4">
-//             <h3 className="text-lg font-semibold">Chi tiết phiếu: {selectedPhieu}</h3>
-//             <button onClick={() => setChitietVisible(false)} className="text-gray-500 hover:text-gray-700">
-//               ✕
-//             </button>
-//           </div>
-//           {chitiet.length === 0 ? (
-//             <div className="text-center py-4 text-gray-500">Không có chi tiết sản phẩm</div>
-//           ) : (
-//             <table className="w-full border-collapse">
-//               <thead>
-//                 <tr className="bg-gray-50">
-//                   <th className="border border-gray-200 px-4 py-2 text-left">Mã sản phẩm</th>
-//                   <th className="border border-gray-200 px-4 py-2 text-left">Số lượng</th>
-//                   {type === 'nhap' && <th className="border border-gray-200 px-4 py-2 text-left">Tổng tiền</th>}
-//                 </tr>
-//               </thead>
-//               <tbody>
-//                 {chitiet.map((ct: any, idx: number) => (
-//                   <tr key={idx}>
-//                     <td className="border border-gray-200 px-4 py-2">{ct.MaSP}</td>
-//                     <td className="border border-gray-200 px-4 py-2">{ct.SoLuong}</td>
-//                     {type === 'nhap' && <td className="border border-gray-200 px-4 py-2">{ct.TongTien?.toLocaleString('vi-VN')} ₫</td>}
-//                   </tr>
-//                 ))}
-//               </tbody>
-//             </table>
-//           )}
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
 'use client';
 
 import { useState, useEffect } from 'react';
 
 interface DanhSachPhieuProps {
-  type: 'nhap' | 'xuat' | 'chuyen';
+  type: 'nhap' | 'xuat' | 'chuyen' | 'nhan';
 }
 
 export default function DanhSachPhieuForm({ type = 'nhap' }: DanhSachPhieuProps) {
@@ -194,17 +14,27 @@ export default function DanhSachPhieuForm({ type = 'nhap' }: DanhSachPhieuProps)
   const [chitietVisible, setChitietVisible] = useState(false);
   const [chitiet, setChitiet] = useState<any[]>([]);
 
-  // Xác định tên cột ID và màu sắc chủ đạo dựa trên loại phiếu
+  // 1. Cấu hình màu sắc và nhãn theo loại phiếu
   const config = {
     nhap: { id: 'MaPN', label: 'Phiếu Nhập', color: 'blue' },
     xuat: { id: 'MaPX', label: 'Phiếu Xuất', color: 'orange' },
-    chuyen: { id: 'MaPC', label: 'Phiếu Chuyển', color: 'purple' }
+    chuyen: { id: 'MaPC', label: 'Phiếu Chuyển', color: 'purple' },
+    nhan: { id: 'MaPNH', label: 'Phiếu Nhận', color: 'green' }
   }[type];
+
+  const colorClasses = {
+    blue: { bg: 'bg-blue-50/50', text: 'text-blue-700', border: 'border-blue-200', badge: 'bg-blue-100 text-blue-800' },
+    orange: { bg: 'bg-orange-50/50', text: 'text-orange-700', border: 'border-orange-200', badge: 'bg-orange-100 text-orange-800' },
+    purple: { bg: 'bg-purple-50/50', text: 'text-purple-700', border: 'border-purple-200', badge: 'bg-purple-100 text-purple-800' },
+    green: { bg: 'bg-green-50/50', text: 'text-green-700', border: 'border-green-200', badge: 'bg-green-100 text-green-800' }
+  }[config.color as 'blue' | 'orange' | 'purple' | 'green'];
 
   useEffect(() => {
     loadPhieu();
+    setChitietVisible(false);
   }, [type]);
 
+  // 2. Load danh sách phiếu từ API
   const loadPhieu = async () => {
     setLoading(true);
     setError(null);
@@ -216,176 +46,163 @@ export default function DanhSachPhieuForm({ type = 'nhap' }: DanhSachPhieuProps)
       } else {
         setError(data.error || 'Không thể tải danh sách');
       }
-    } catch (err: any) {
-      setError(err.message || 'Lỗi kết nối server');
+    } catch (err) {
+      setError('Lỗi kết nối server');
     } finally {
       setLoading(false);
     }
   };
 
+  // 3. Load chi tiết sản phẩm của phiếu
   const loadChitiet = async (id: string) => {
     try {
       const res = await fetch(`/api/phieu?type=${type}&maphieu=${id}&chitiet=true`);
       const data = await res.json();
       if (data.ok) {
-        setChitiet(Array.isArray(data.chitiet) ? data.chitiet : []);
+        setChitiet(data.chitiet || []);
         setChitietVisible(true);
-      } else {
-        alert(data.error || 'Không thể tải chi tiết');
+        setSelectedPhieu(id);
       }
-    } catch (err: any) {
-      alert('Lỗi tải chi tiết sản phẩm');
+    } catch (err) {
+      alert('Lỗi tải dữ liệu chi tiết');
     }
   };
 
   const handleXoa = async (id: string) => {
-    if (!window.confirm(`Bạn chắc chắn muốn xóa ${config.label} này?`)) return;
+    if (!window.confirm(`Xác nhận xóa phiếu ${id}? Hành động này không thể hoàn tác.`)) return;
     try {
       const res = await fetch('/api/phieu', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type, maphieu: id }),
       });
-      const data = await res.json();
-      if (data.ok) {
-        loadPhieu();
-        if (selectedPhieu === id) setChitietVisible(false);
-      } else {
-        setError(data.error || 'Xóa thất bại');
-      }
-    } catch (err: any) {
-      setError('Lỗi khi thực hiện xóa');
+      if ((await res.json()).ok) loadPhieu();
+    } catch (err) {
+      alert('Lỗi khi thực hiện xóa');
     }
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      {/* Header của bảng */}
-      <div className={`p-4 border-b flex justify-between items-center bg-${config.color}-50/30`}>
-        <h3 className={`font-bold text-${config.color}-700 uppercase text-sm tracking-wider`}>
-          {config.label}
-        </h3>
+    <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden transition-all">
+      {/* HEADER BẢNG */}
+      <div className={`p-5 border-b flex justify-between items-center ${colorClasses.bg}`}>
+        <div>
+          <h3 className={`font-black uppercase text-sm tracking-tighter ${colorClasses.text}`}>
+            {config.label}
+          </h3>
+          <p className="text-[10px] text-gray-500 font-bold uppercase opacity-60">Quản lý lịch sử biến động</p>
+        </div>
         <button 
           onClick={loadPhieu} 
-          className="text-xs bg-white border px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors font-medium shadow-sm"
+          className="bg-white hover:scale-105 transition-transform border border-gray-200 px-4 py-2 rounded-2xl font-black text-[10px] shadow-sm flex items-center gap-2"
           disabled={loading}
         >
-          {loading ? '⏳...' : '🔄 Tải lại'}
+          {loading ? '...' : '🔄 LÀM MỚI'}
         </button>
       </div>
 
-      {error && <div className="m-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
+      {error && <div className="m-5 p-4 bg-red-50 text-red-600 rounded-2xl text-xs font-black border border-red-100">⚠️ {error}</div>}
 
-      {/* Danh sách phiếu chính */}
+      {/* TABLE CONTENT */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600 font-medium">
-            <tr>
-              <th className="px-4 py-3 text-left">Mã Phiếu</th>
-              <th className="px-4 py-3 text-left">Ngày Tạo</th>
-              {type === 'nhap' && <th className="px-4 py-3 text-left">Nhà PP</th>}
-              {type === 'xuat' && <th className="px-4 py-3 text-left">Cửa Hàng</th>}
-              {type === 'chuyen' && <th className="px-4 py-3 text-left">Lộ Trình</th>}
-              <th className="px-4 py-3 text-left">Giá Trị/TT</th>
-              <th className="px-4 py-3 text-center">Thao Tác</th>
+          <thead>
+            <tr className="bg-gray-50/50 text-gray-400 font-black text-[10px] uppercase tracking-widest border-b border-gray-100">
+              <th className="px-6 py-5 text-left">Mã định danh</th>
+              <th className="px-6 py-5 text-left">Thời điểm</th>
+              {type === 'nhap' && <th className="px-6 py-5 text-left">Đối tác NPP</th>}
+              {(type === 'xuat' || type === 'nhan') && <th className="px-6 py-5 text-left">Cơ sở/Cửa hàng</th>}
+              {type === 'chuyen' && <th className="px-6 py-5 text-left">Lộ trình vận chuyển</th>}
+              <th className="px-6 py-5 text-left">Trạng thái</th>
+              <th className="px-6 py-5 text-center">Thao tác</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {phieu.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-gray-400">Chưa có dữ liệu {config.label}</td>
-              </tr>
+          <tbody className="divide-y divide-gray-50">
+            {phieu.length === 0 && !loading ? (
+              <tr><td colSpan={6} className="px-6 py-20 text-center text-gray-300 font-medium italic">Hiện chưa có dữ liệu cho mục này...</td></tr>
             ) : (
-              phieu.map((p: any) => {
-                const currentId = p[config.id]; // Fix lỗi Key tại đây
-                return (
-                  <tr key={currentId} className={`hover:bg-gray-50 transition-colors ${selectedPhieu === currentId ? 'bg-blue-50/50' : ''}`}>
-                    <td className="px-4 py-3 font-bold text-gray-900">{currentId}</td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {p.NgayTao ? new Date(p.NgayTao).toLocaleDateString('vi-VN') : '---'}
-                    </td>
-                    
-                    {/* Cột động theo loại phiếu */}
-                    <td className="px-4 py-3 text-gray-600">
-                      {type === 'nhap' && (p.MaNPP || '---')}
-                      {type === 'xuat' && (p.MaCH || '---')}
-                      {type === 'chuyen' && (
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium text-red-600">{p.MaCH_Xuat}</span>
-                          <span>➔</span>
-                          <span className="font-medium text-green-600">{p.MaCH_Nhan}</span>
-                        </div>
-                      )}
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <div className="font-semibold text-gray-800">
-                        {type === 'chuyen' ? 'Nội bộ' : `${p.TongTien?.toLocaleString('vi-VN')} ₫`}
+              phieu.map((p) => (
+                <tr key={p[config.id]} className={`group hover:bg-gray-50/80 transition-colors ${selectedPhieu === p[config.id] ? 'bg-purple-50/30' : ''}`}>
+                  <td className="px-6 py-5 font-black text-gray-900">{p[config.id]}</td>
+                  <td className="px-6 py-5 text-gray-500 text-xs font-medium">
+                    {p.NgayTao ? new Date(p.NgayTao).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '---'}
+                  </td>
+                  
+                  {/* Dữ liệu linh hoạt */}
+                  <td className="px-6 py-5 font-bold text-gray-600 italic">
+                    {type === 'nhap' && (p.MaNPP || '---')}
+                    {(type === 'xuat' || type === 'nhan') && (p.MaCH || '---')}
+                    {type === 'chuyen' && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-purple-600 bg-purple-50 px-2 py-0.5 rounded-lg">{p.MaCH_Xuat}</span>
+                        <span className="text-gray-300">➜</span>
+                        <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded-lg">{p.MaCH_Nhan}</span>
                       </div>
-                      <span className={`text-[10px] uppercase font-bold ${p.TrangThai === 1 ? 'text-green-500' : 'text-orange-500'}`}>
-                        {p.TrangThai === 1 ? '● Hoàn thành' : '● Chờ xử lý'}
-                      </span>
-                    </td>
+                    )}
+                  </td>
 
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex justify-center gap-2">
-                        <button
-                          onClick={() => {
-                            setSelectedPhieu(currentId);
-                            loadChitiet(currentId);
-                          }}
-                          className="p-1.5 hover:bg-blue-100 text-blue-600 rounded-md transition-colors"
-                          title="Xem chi tiết"
-                        >
-                          👁️
-                        </button>
-                        <button 
-                          onClick={() => handleXoa(currentId)} 
-                          className="p-1.5 hover:bg-red-100 text-red-500 rounded-md transition-colors"
-                          title="Xóa phiếu"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
+                  <td className="px-6 py-5">
+                    <span className={`text-[10px] font-black px-3 py-1.5 rounded-xl shadow-sm border ${
+                      p.TrangThai === 1 
+                      ? 'bg-green-50 text-green-700 border-green-100' 
+                      : 'bg-orange-50 text-orange-700 border-orange-100 animate-pulse'
+                    }`}>
+                      {p.TrangThai === 1 ? '✅ HOÀN THÀNH' : '⏳ CHỜ XỬ LÝ'}
+                    </span>
+                  </td>
+
+                  <td className="px-6 py-5 text-center">
+                    <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => loadChitiet(p[config.id])} className="p-2.5 bg-white border border-gray-100 hover:border-purple-300 rounded-xl text-lg shadow-sm" title="Chi tiết">👁️</button>
+                      <button onClick={() => handleXoa(p[config.id])} className="p-2.5 bg-white border border-gray-100 hover:bg-red-50 hover:border-red-200 rounded-xl text-lg shadow-sm" title="Xóa">🗑️</button>
+                    </div>
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>
       </div>
 
-      {/* Khu vực hiển thị chi tiết sản phẩm phía dưới */}
-      {chitietVisible && selectedPhieu && (
-        <div className={`m-4 p-4 rounded-xl border-2 border-dashed bg-gray-50 border-${config.color}-200`}>
-          <div className="flex justify-between items-center mb-4">
-            <h4 className="font-bold text-gray-800">📦 Chi tiết sản phẩm: {selectedPhieu}</h4>
-            <button onClick={() => setChitietVisible(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+      {/* CHI TIẾT SẢN PHẨM (DASHED BOX) */}
+      {chitietVisible && (
+        <div className={`m-6 p-6 rounded-3xl border-2 border-dashed bg-gray-50/50 ${colorClasses.border} animate-in fade-in slide-in-from-bottom-4 duration-300`}>
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h4 className="font-black text-gray-800 text-sm flex items-center gap-2">
+                📦 KIỂM TRA SẢN PHẨM: <span className={colorClasses.text}>{selectedPhieu}</span>
+              </h4>
+              <p className="text-[10px] text-gray-400 font-bold uppercase">Danh sách chi tiết các mặt hàng trong phiếu</p>
+            </div>
+            <button onClick={() => setChitietVisible(false)} className="bg-white border p-2 rounded-xl hover:text-red-500 font-black shadow-sm">ĐÓNG ✕</button>
           </div>
           
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="text-gray-500 border-b">
-                <th className="py-2 text-left">Mã Sản Phẩm</th>
-                <th className="py-2 text-center">Số Lượng</th>
-                {type === 'nhap' && <th className="py-2 text-right">Thành Tiền</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {chitiet.map((ct: any, idx: number) => (
-                <tr key={idx} className="border-b border-gray-100 last:border-0">
-                  <td className="py-2 font-medium">{ct.MaSP}</td>
-                  <td className="py-2 text-center">{ct.SoLuong}</td>
-                  {type === 'nhap' && (
-                    <td className="py-2 text-right text-green-600 font-semibold">
-                      {ct.TongTien?.toLocaleString('vi-VN')} ₫
-                    </td>
-                  )}
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50/80 text-gray-400 font-black text-[9px] uppercase">
+                <tr>
+                  <th className="px-4 py-4 text-left">Mã sản phẩm</th>
+                  <th className="px-4 py-4 text-center">Lượng hàng</th>
+                  {type === 'nhap' && <th className="px-4 py-4 text-right">Tổng giá trị</th>}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {chitiet.map((ct: any, idx: number) => (
+                  <tr key={idx} className="hover:bg-gray-50/50">
+                    <td className="px-4 py-4 font-black text-gray-700">{ct.MaSp || ct.MaSP || ct.Masp}</td>
+                    <td className="px-4 py-4 text-center">
+                      <span className="bg-gray-100 px-3 py-1 rounded-lg font-black text-gray-600">{ct.SoLuong}</span>
+                    </td>
+                    {type === 'nhap' && (
+                      <td className="px-4 py-4 text-right text-green-600 font-black tracking-tight">
+                        {ct.TongTien?.toLocaleString('vi-VN')} ₫
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

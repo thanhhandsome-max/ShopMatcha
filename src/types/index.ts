@@ -88,7 +88,7 @@ export interface IAddress {
 export interface IKhuyenMaiKhachHang {
   Makmkh: string;
   MaKH: string;
-  giatri?: number;
+  giatri: number;
   thoihan?: Date | string;
   mota?: string;
   Uutien?: number;
@@ -148,12 +148,22 @@ export interface IKhuyenMai {
   MaCH?: string;
   Masp?: string;
   mota?: string;
-  giatrima?: number;
+  giatrima: number;
   thoihan?: Date | string;
   TrangThai?: number; // 1 = active, 0 = inactive
   NgayTao?: Date | string;
 }
-
+  export interface IKhuyenMaiForm {
+    id: string;      // Map với Makhuyenmai hoặc Makmkh
+    target: string;  // Map với MaKH hoặc MaCH
+    storeId: string; 
+    prodId: string;
+    value: string;   // Dùng string để quản lý input dễ hơn, sau đó convert sang number
+    date: string;
+    desc: string;
+    priority: string;
+    type: 'san-pham' | 'khach-hang';
+  }
 export interface IMaGiamGia {
   MaGG: string;
   TenKhuyenMai?: string;
