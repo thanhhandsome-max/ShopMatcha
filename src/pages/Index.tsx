@@ -7,6 +7,8 @@ import { fetchProductList, FrontendProduct, mapBackendProduct } from "@/lib/back
 import { ArrowRight, Leaf, Mountain, Sun } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import MatchaParticles from "@/components/ui/MatchaParticle";
+import FogOverlay from "@/components/ui/FogOverlay";
 
 const heroImage = "https://mgx-backend-cdn.metadl.com/generate/images/618746/2026-04-09/88544963-be0e-491f-abe3-dbfd08bebd77.png";
 const fieldImage = "https://mgx-backend-cdn.metadl.com/generate/images/618746/2026-04-09/cc543ae9-1f31-403d-b2bf-8b80c519d337.png";
@@ -63,6 +65,8 @@ export default function Index() {
 
       {/* Hero Section */}
       <section className="relative h-[70vh] lg:h-[85vh] overflow-hidden">
+         <MatchaParticles />
+         <FogOverlay />
         {slides.map((slide, index) => (
           <div
             key={index}

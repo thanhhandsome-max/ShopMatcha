@@ -42,10 +42,11 @@ export default function Header() {
         Giao hàng miễn phí toàn quốc! Free shipping on every order!
       </div>
 
-      {/* Main Header */}
+      {/* Main Header — z-50 đảm bảo luôn trên particle (z-9) */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
+
             {/* Mobile Menu Button */}
             <button
               className="lg:hidden p-2 -ml-2"
@@ -81,6 +82,7 @@ export default function Header() {
 
             {/* Right Actions */}
             <div className="flex items-center gap-3">
+
               {/* Search */}
               <button
                 className="p-2 hover:text-[#2D5016] transition-colors"
@@ -95,7 +97,7 @@ export default function Header() {
                 <div className="relative hidden sm:block">
                   <button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="p-2 hover:text-[#2D5016] transition-colors flex items-center gap-2"
+                    className="p-2 hover:text-[#2D5016] transition-colors"
                   >
                     <User size={18} />
                   </button>
@@ -106,14 +108,10 @@ export default function Header() {
                         <p className="text-xs text-gray-500">{user.email}</p>
                       </div>
                       <button
-                        onClick={() => {
-                          logout();
-                          setUserMenuOpen(false);
-                        }}
+                        onClick={() => { logout(); setUserMenuOpen(false); }}
                         className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                       >
-                        <LogOut size={16} />
-                        Đăng xuất
+                        <LogOut size={16} /> Đăng xuất
                       </button>
                     </div>
                   )}
@@ -124,7 +122,7 @@ export default function Header() {
                 </Link>
               )}
 
-              {/* Cart */}
+              {/* Cart — FIX: chỉ render CartDrawer 1 lần duy nhất trong SheetContent */}
               <Sheet open={cartOpen} onOpenChange={setCartOpen}>
                 <SheetTrigger asChild>
                   <button className="p-2 hover:text-[#2D5016] transition-colors relative" aria-label="Giỏ hàng">
@@ -136,13 +134,15 @@ export default function Header() {
                     )}
                   </button>
                 </SheetTrigger>
-                <SheetContent className="p-0 w-full sm:w-[420px]">
+                {/* ✅ CartDrawer chỉ ở đây, không render thêm lần nào nữa */}
+                <SheetContent
+                  className="p-0 w-full sm:w-[420px] bg-white"
+                  style={{ zIndex: 100 }} // trên mọi thứ kể cả header z-50
+                >
                   <CartDrawer onClose={() => setCartOpen(false)} />
                 </SheetContent>
-                {cartOpen && (
-                  <CartDrawer onClose={() => setCartOpen(false)} />
-                )}
               </Sheet>
+
             </div>
           </div>
         </div>
@@ -184,15 +184,12 @@ export default function Header() {
               ))}
               {user ? (
                 <>
-                  <div className="py-3 text-sm tracking-[0.15em] font-medium border-b border-gray-50">
-                    <p className="text-gray-700">{user.name}</p>
+                  <div className="py-3 text-sm border-b border-gray-50">
+                    <p className="text-gray-700 font-medium">{user.name}</p>
                     <p className="text-xs text-gray-500">{user.email}</p>
                   </div>
                   <button
-                    onClick={() => {
-                      logout();
-                      setMobileMenuOpen(false);
-                    }}
+                    onClick={() => { logout(); setMobileMenuOpen(false); }}
                     className="w-full text-left py-3 text-sm tracking-[0.15em] font-medium text-gray-700 flex items-center gap-2"
                   >
                     <LogOut size={16} /> Đăng xuất

@@ -3,99 +3,110 @@
 import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
 import ProductCard from "@/components/shop/ProductCard";
+import Product360Card from "@/components/ui/Product360card";
 import {
-    FrontendProduct,
-    fetchProductById,
-    fetchRelatedProducts,
-    mapBackendProduct
+  FrontendProduct,
+  fetchProductById,
+  fetchRelatedProducts,
+  mapBackendProduct,
 } from "@/lib/backend";
 import { formatMoneyVND, useCart } from "@/store/useCart";
-import { ChevronRight, Minus, Plus, RotateCcw, Shield, ShoppingBag, Truck } from "lucide-react";
+import { AlertCircle, ChevronRight, Minus, Plus, RotateCcw, Shield, ShoppingBag, Truck } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+// ── Hàm kiểm tra tồn kho — gọi thẳng API backend ──
+async function checkProductStock(productId: string): Promise<{ inStock: boolean; totalStock: number }> {
+  try {
+    const res = await fetch(`/api/products/${productId}/stock`);
+    if (!res.ok) throw new Error('Stock API error');
+    const data = await res.json();
+    return {
+      inStock:    data.inStock    ?? data.total_stock > 0,
+      totalStock: data.totalStock ?? data.total_stock ?? 0,
+    };
+  } catch {
+    // Nếu API chưa có → fallback: coi như còn hàng, không hiện số
+    return { inStock: true, totalStock: -1 };
+  }
+}
+
 export default function ProductDetail() {
   const params = useParams();
   const id = (params?.id as string) || "";
-  const [product, setProduct] = useState<FrontendProduct | null>(null);
-  const [relatedProducts, setRelatedProducts] = useState<FrontendProduct[]>([]);
-  const [quantity, setQuantity] = useState(1);
-  const [activeImage, setActiveImage] = useState(0);
-  const [added, setAdded] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [stockError, setStockError] = useState<string | null>(null);
-  const [availableStock, setAvailableStock] = useState<number | null>(null);
-  const addItem = useCart((s) => s.addItem);
-  const checkItemStock = useCart((s) => s.checkItemStock);
 
+  const [product,          setProduct]          = useState<FrontendProduct | null>(null);
+  const [relatedProducts,  setRelatedProducts]  = useState<FrontendProduct[]>([]);
+  const [quantity,         setQuantity]         = useState(1);
+  const [activeImage,      setActiveImage]      = useState(0);
+  const [added,            setAdded]            = useState(false);
+  const [loading,          setLoading]          = useState(true);
+  const [error,            setError]            = useState<string | null>(null);
+  const [stockError,       setStockError]       = useState<string | null>(null);
+  const [availableStock,   setAvailableStock]   = useState<number | null>(null);
+
+  const addItem         = useCart((s) => s.addItem);
+
+  // ── Load sản phẩm ──
   useEffect(() => {
-    const loadProduct = async () => {
+    if (!id) return;
+
+    const load = async () => {
       setLoading(true);
       setError(null);
       setStockError(null);
       setAvailableStock(null);
 
       try {
-        const productData = await fetchProductById(id);
-        const mappedProduct = mapBackendProduct(productData);
-        setProduct(mappedProduct);
+        const productData   = await fetchProductById(id);
+        const mapped        = mapBackendProduct(productData);
+        setProduct(mapped);
 
-        // Kiểm tra tồn kho
-        if (mappedProduct.id) {
-          const stockInfo = await checkProductStock(mappedProduct.id);
-          setAvailableStock(stockInfo.totalStock);
-          
-          if (!stockInfo.inStock) {
-            setStockError('Sản phẩm hiện đã hết hàng');
-          }
-        }
+        // Kiểm tra tồn kho song song với related products
+        const [stockInfo, relatedData] = await Promise.all([
+          checkProductStock(mapped.id),
+          fetchRelatedProducts(id),
+        ]);
 
-        const relatedData = await fetchRelatedProducts(id);
+        // totalStock === -1 nghĩa là API chưa có → không hiện số
+        setAvailableStock(stockInfo.totalStock === -1 ? null : stockInfo.totalStock);
+        if (!stockInfo.inStock) setStockError('Sản phẩm hiện đã hết hàng');
+
         setRelatedProducts(relatedData.map(mapBackendProduct));
-      } catch (fetchError) {
-        setError("Không thể tải chi tiết sản phẩm. Vui lòng thử lại sau.");
+      } catch {
+        setError('Không thể tải chi tiết sản phẩm. Vui lòng thử lại sau.');
       } finally {
         setLoading(false);
       }
     };
 
-    if (id) {
-      loadProduct();
-    }
+    load();
   }, [id]);
 
+  // ── Thêm vào giỏ ──
   const handleAddToCart = async () => {
-    if (!product) {
-      return;
-    }
-
+    if (!product) return;
     setStockError(null);
-    
+
     const result = await addItem(
-      {
-        productId: product.id,
-        name: product.name,
-        price: product.price,
-        image: product.image,
-      },
-      quantity
+      { productId: product.id, name: product.name, price: product.price, image: product.image },
+      quantity,
     );
-    
-    if (result.success) {
+
+    if ((result as any)?.success === false) {
+      // useCart trả về object có success + message
+      setStockError((result as any).message ?? 'Không thể thêm vào giỏ hàng');
+      // Refresh tồn kho
+      const stockInfo = await checkProductStock(product.id);
+      setAvailableStock(stockInfo.totalStock === -1 ? null : stockInfo.totalStock);
+    } else {
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
-    } else {
-      setStockError(result.message);
-      // Cập nhật lại available stock nếu có
-      if (product?.id) {
-        const stockInfo = await checkProductStock(product.id);
-        setAvailableStock(stockInfo.totalStock);
-      }
     }
   };
 
+  // ── Loading state ──
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FAFAF5]">
@@ -108,13 +119,14 @@ export default function ProductDetail() {
     );
   }
 
+  // ── Error / not found ──
   if (error || !product) {
     return (
       <div className="min-h-screen bg-[#FAFAF5]">
         <Header />
         <div className="max-w-7xl mx-auto px-4 py-20 text-center">
           <h1 className="text-2xl font-serif text-gray-900 mb-4">Sản phẩm không tồn tại</h1>
-          <p className="text-gray-500 text-sm mb-6">{error || "Không tìm thấy sản phẩm."}</p>
+          <p className="text-gray-500 text-sm mb-6">{error || 'Không tìm thấy sản phẩm.'}</p>
           <Link
             href="/products"
             className="inline-block bg-[#2D5016] text-white px-8 py-3 text-xs tracking-[0.15em] font-medium hover:bg-[#3a6b1e] transition-colors"
@@ -127,7 +139,13 @@ export default function ProductDetail() {
     );
   }
 
-  const images = [product.image, product.imageHover];
+  const images         = [product.image, product.imageHover];
+  const outOfStock     = product.inStock === false || availableStock === 0;
+  const stockLabel     = outOfStock
+    ? 'Hết hàng'
+    : availableStock !== null
+      ? `Còn hàng (${availableStock} sản phẩm)`
+      : 'Còn hàng';
 
   return (
     <div className="min-h-screen bg-[#FAFAF5]">
@@ -136,13 +154,9 @@ export default function ProductDetail() {
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <nav className="flex items-center gap-1 text-xs text-gray-500">
-          <Link href="/" className="hover:text-[#2D5016] transition-colors">
-            Home
-          </Link>
+          <Link href="/" className="hover:text-[#2D5016] transition-colors">Home</Link>
           <ChevronRight size={12} />
-          <Link href="/products" className="hover:text-[#2D5016] transition-colors">
-            Sản phẩm
-          </Link>
+          <Link href="/products" className="hover:text-[#2D5016] transition-colors">Sản phẩm</Link>
           <ChevronRight size={12} />
           <span className="text-gray-900 truncate max-w-[200px]">{product.name}</span>
         </nav>
@@ -151,22 +165,22 @@ export default function ProductDetail() {
       {/* Product Detail */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
-          {/* Images */}
+
+          {/* ── Ảnh + 360 ── */}
           <div className="space-y-4">
-            <div className="aspect-square bg-gray-50 overflow-hidden">
-              <img
-                src={images[activeImage]}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
+            <Product360Card
+              frontImage={product.image}
+              backImage={product.imageHover}
+              alt={product.name}
+            />
+            {/* Thumbnail strip */}
             <div className="flex gap-3">
               {images.map((img, i) => (
                 <button
                   key={i}
                   onClick={() => setActiveImage(i)}
                   className={`w-20 h-20 overflow-hidden border-2 transition-colors ${
-                    activeImage === i ? "border-[#2D5016]" : "border-transparent"
+                    activeImage === i ? 'border-[#2D5016]' : 'border-transparent'
                   }`}
                 >
                   <img src={img} alt="" className="w-full h-full object-cover" />
@@ -175,13 +189,14 @@ export default function ProductDetail() {
             </div>
           </div>
 
-          {/* Info */}
+          {/* ── Info ── */}
           <div className="lg:py-4">
             <p className="text-[10px] text-gray-400 tracking-[0.2em] uppercase mb-2">HTDCHA</p>
             <h1 className="text-2xl md:text-3xl font-serif text-gray-900 mb-4 leading-snug">
               {product.name}
             </h1>
 
+            {/* Giá */}
             <div className="flex items-center gap-3 mb-6">
               <span className="text-2xl font-medium text-gray-900">
                 {formatMoneyVND(product.price)}
@@ -200,7 +215,7 @@ export default function ProductDetail() {
               {product.longDescription}
             </p>
 
-            {/* Product Details */}
+            {/* Chi tiết sản phẩm */}
             <div className="space-y-3 mb-8 text-sm">
               <div className="flex items-center gap-2">
                 <span className="text-gray-500 w-24">Xuất xứ:</span>
@@ -212,17 +227,17 @@ export default function ProductDetail() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-gray-500 w-24">Tình trạng:</span>
-                <span className={product.inStock ? "text-green-600" : "text-red-500"}>
-                  {product.inStock ? `Còn hàng (${availableStock !== null ? availableStock : '...'} sản phẩm)` : "Hết hàng"}
+                <span className={outOfStock ? 'text-red-500' : 'text-green-600'}>
+                  {stockLabel}
                 </span>
               </div>
             </div>
 
-            {/* Quantity & Add to Cart */}
-            <div className="flex items-center gap-4 mb-6">
+            {/* Số lượng + Add to cart */}
+            <div className="flex items-center gap-4 mb-4">
               <div className="flex items-center border border-gray-300">
                 <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  onClick={() => setQuantity(q => Math.max(1, q - 1))}
                   className="p-3 hover:bg-gray-50 transition-colors"
                   aria-label="Giảm"
                 >
@@ -232,7 +247,9 @@ export default function ProductDetail() {
                   {quantity}
                 </span>
                 <button
-                  onClick={() => setQuantity(availableStock !== null ? Math.min(quantity + 1, availableStock) : quantity + 1)}
+                  onClick={() => setQuantity(q =>
+                    availableStock !== null ? Math.min(q + 1, availableStock) : q + 1
+                  )}
                   disabled={availableStock !== null && quantity >= availableStock}
                   className="p-3 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Tăng"
@@ -240,31 +257,32 @@ export default function ProductDetail() {
                   <Plus size={14} />
                 </button>
               </div>
+
               <button
                 onClick={handleAddToCart}
-                disabled={!product.inStock || availableStock === 0}
+                disabled={outOfStock}
                 className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-xs tracking-[0.15em] font-semibold transition-all ${
                   added
-                    ? "bg-green-600 text-white"
-                    : product.inStock && availableStock !== 0
-                    ? "bg-[#2D5016] text-white hover:bg-[#3a6b1e]"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    ? 'bg-green-600 text-white'
+                    : outOfStock
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-[#2D5016] text-white hover:bg-[#3a6b1e]'
                 }`}
               >
                 <ShoppingBag size={14} />
-                {added ? "ĐÃ THÊM VÀO GIỎ ✓" : "THÊM VÀO GIỎ HÀNG"}
+                {added ? 'ĐÃ THÊM VÀO GIỎ ✓' : 'THÊM VÀO GIỎ HÀNG'}
               </button>
             </div>
-            
-            {/* Stock Error Message */}
+
+            {/* Stock error */}
             {stockError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center gap-2">
+              <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-md flex items-center gap-2">
                 <AlertCircle size={16} className="text-red-600 flex-shrink-0" />
                 <p className="text-sm text-red-600">{stockError}</p>
               </div>
             )}
 
-            {/* Trust Badges */}
+            {/* Trust badges */}
             <div className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-200">
               <div className="text-center">
                 <Truck size={18} className="mx-auto mb-2 text-[#2D5016]" />

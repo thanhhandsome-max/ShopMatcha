@@ -11,7 +11,7 @@ import {
 } from "@/lib/backend";
 import { SlidersHorizontal } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 
 const categories = [
   { value: "all", label: "Tất cả" },
@@ -27,9 +27,9 @@ const sortOptions = [
   { value: "name-asc", label: "Tên: A → Z" },
 ];
 
-export default function Products() {
+function ProductsContent() {
   const searchParams = useSearchParams();
-  const searchQuery = searchParams.get('search') || '';
+  const searchQuery = searchParams?.get('search') || '';
   
   const [products, setProducts] = useState<FrontendProduct[]>([]);
   const [category, setCategory] = useState("all");
@@ -47,11 +47,9 @@ export default function Products() {
 
       try {
         if (searchQuery.trim()) {
-          // Search products using backend search API
           const data = await searchProducts(searchQuery, 100);
           setProducts(data.results.map(mapBackendProduct));
         } else {
-          // Load all products
           const data = await fetchProductList({ limit: 100 });
           setProducts(data.products.map(mapBackendProduct));
         }
@@ -82,7 +80,6 @@ export default function Products() {
       case "name-asc":
         result.sort((a, b) => a.name.localeCompare(b.name));
         break;
-      case "featured":
       default:
         break;
     }
@@ -90,22 +87,18 @@ export default function Products() {
     return result;
   }, [category, sort, products]);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [category, sort, searchQuery]);
 
-  // Pagination logic
   const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
   const startIndex = (currentPage - 1) * productsPerPage;
-  const endIndex = startIndex + productsPerPage;
-  const currentProducts = filteredProducts.slice(startIndex, endIndex);
+  const currentProducts = filteredProducts.slice(startIndex, startIndex + productsPerPage);
 
   return (
     <div className="min-h-screen bg-[#FAFAF5]">
       <Header />
 
-      {/* Page Header */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
           <h1 className="text-3xl md:text-4xl font-serif text-[#2D5016] tracking-wide mb-2">
@@ -121,7 +114,6 @@ export default function Products() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filter Bar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
             <button
@@ -162,7 +154,6 @@ export default function Products() {
           </div>
         </div>
 
-        {/* Results Count */}
         <p className="text-xs text-gray-500 mb-6 tracking-wider">
           {loading 
             ? "Đang tải sản phẩm..." 
@@ -194,7 +185,6 @@ export default function Products() {
               </div>
             )}
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-2 mt-12">
                 <button
@@ -234,5 +224,17 @@ export default function Products() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function Products() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#FAFAF5] flex items-center justify-center">
+        <p className="text-gray-500 text-sm">Đang tải...</p>
+      </div>
+    }>
+      <ProductsContent />
+    </Suspense>
   );
 }
