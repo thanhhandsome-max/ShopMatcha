@@ -51,7 +51,13 @@ export interface INhanVien {
   LuongNen?: number; // decimal
   Email?: string;
 }
-
+export interface ICuaHang_NhanVien {
+  MaCH: string;
+  MaNV: string;
+  ChucVu?: number;        // 0: nhân viên thường, 1: cửa hàng trưởng, 2: quản lý
+  TrangThai?: number;     // ví dụ 0: nghỉ, 1: đang làm
+  NgayNhanChuc?: Date | string;
+}
 export interface INhaPhanPhoi {
   MaNPP: string;
   TenNPP: string;
@@ -191,6 +197,12 @@ export interface ISanPhamAnh {
 
 export interface ITonKho {
   MaKho: string;
+  MaSP: string;
+  SoLuong?: number;
+  NgayCapNhat?: Date | string;
+}
+export interface ITonKhoCuaHang {
+  MaCH: string;
   MaSP: string;
   SoLuong?: number;
   NgayCapNhat?: Date | string;

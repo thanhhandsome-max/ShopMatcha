@@ -17,7 +17,7 @@ import {
   TableIcon,
   UserCircleIcon,
 } from "../icons/index";
-import SidebarWidget from "./SidebarWidget";
+
 
 type NavItem = {
   name: string;
@@ -32,17 +32,15 @@ const navItems: NavItem[] = [
     name: "Dashboard",
     subItems: [{ name: "Ecommerce", path: "/", pro: false }],
   },
-  {
-    icon: <CalenderIcon />,
-    name: "Calendar",
-    path: "/calendar",
-  },
+
   {
     icon: <BoxCubeIcon />,
     name: "Quản lý sản phẩm",
     subItems: [
       { name: "Sản phẩm", path: "/san-pham", pro: false },
       { name: "Loại sản phẩm", path: "/loai-san-pham", pro: false },
+      { name: "Tồn kho", path: "/ton-kho", pro: false },
+      { name: "Tồn kho cửa hàng", path: "/ton-kho-cua-hang", pro: false },
     ],
   },
   {
@@ -69,48 +67,44 @@ const navItems: NavItem[] = [
     name: "User Profile",
     path: "/profile",
   },
-
   {
-    name: "Forms",
-    icon: <ListIcon />,
-    subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
-  },
-  {
-    name: "Tables",
-    icon: <TableIcon />,
-    subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
-  },
-  {
-    name: "Pages",
-    icon: <PageIcon />,
+    icon: <BoxCubeIcon />,
+    name: "Quản Lý Phân Phối",
     subItems: [
-      { name: "Blank Page", path: "/blank", pro: false },
-      { name: "404 Error", path: "/error-404", pro: false },
-    ],
-  },
-];
-
-const othersItems: NavItem[] = [
-  {
-    icon: <PieChartIcon />,
-    name: "Charts",
-    subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false },
-      { name: "Bar Chart", path: "/bar-chart", pro: false },
+      { name: "Nhà Phân Phối", path: "/nha-phan-phoi", pro: false },
+      { name: "Lịch Sử Giao Dịch", path: "/lich-su-giao-dich", pro: false },
     ],
   },
   {
     icon: <BoxCubeIcon />,
-    name: "UI Elements",
+    name: "Quản Lý Nhân Viên",
     subItems: [
-      { name: "Alerts", path: "/alerts", pro: false },
-      { name: "Avatar", path: "/avatars", pro: false },
-      { name: "Badge", path: "/badge", pro: false },
-      { name: "Buttons", path: "/buttons", pro: false },
-      { name: "Images", path: "/images", pro: false },
-      { name: "Videos", path: "/videos", pro: false },
+      { name: "Danh sách nhân viên", path: "/nhan-vien", pro: false },
+      { name: "Điều Hành Nhân Viên", path: "/nhan-vien-cua-hang", pro: false },
     ],
   },
+  {
+    icon: <BoxCubeIcon />,
+    name: "Quản Lý Cửa Hàng",
+    subItems: [
+      { name: "Danh sách cửa hàng", path: "/cua-hang", pro: false },
+      { name: "Doanh thu cửa hàng", path: "/doanh-thu-cua-hang", pro: false },
+    ],
+  },
+    {
+    icon: <BoxCubeIcon />,
+    name: "Quản Lý Người Dùng",
+    subItems: [
+      { name: "Quản lý tài khoản", path: "/tai-khoan", pro: false },
+      { name: "Quản lý vai trò", path: "/vai-tro", pro: false },
+        { name: "Quản lý khách hàng", path: "/khach-hang", pro: false },
+    ],
+  },
+
+];
+
+const othersItems: NavItem[] = [
+
   {
     icon: <PlugInIcon />,
     name: "Authentication",
@@ -388,7 +382,7 @@ const AppSidebar: React.FC = () => {
             </div>
           </div>
         </nav>
-        {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}
+        {isExpanded || isHovered || isMobileOpen ? null : null}
       </div>
     </aside>
   );
