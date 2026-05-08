@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       type, maSP, maCH, maKho, soLuong, tongTien, 
-      maPhieu, maNhanVien, ghiChu, trangThai 
+      maPhieu, maNhanVien, ghiChu, trangthai 
     } = body;
 
     // 2.1 Tạo mã lịch sử tự động (LS00001)
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
       GhiChu: ghiChu || null,
       NgayTao: new Date(),
       // LOGIC QUAN TRỌNG: Lấy trangThai từ API Phieu gửi sang (0 hoặc 1)
-      TrangThaiGiaoDich: trangThai !== undefined ? Number(trangThai) : 1,
+      TrangThaiGiaoDich: trangthai !== undefined ? Number(trangthai) : 1,
       MaKho: maKho || null,
       MaCH: maCH || null,
       LoaiBienDong: type.toUpperCase()
@@ -140,15 +140,15 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { maPhieu, trangThai } = body;
+    const { maPhieu, trangthai } = body;
 
     if (!maPhieu) return NextResponse.json({ ok: false, error: 'Thiếu mã phiếu đối ứng' }, { status: 400 });
 
     // Cập nhật tất cả các dòng lịch sử liên quan đến mã phiếu này
     // (Dùng để chuyển trạng thái từ 0 sang 1 cho phiếu chuyển)
     await dbQuery(
-      `UPDATE lichsukho SET TrangThaiGiaoDich = @trangThai WHERE MaPhieuLienQuan = @maPhieu`,
-      { maPhieu, trangThai: Number(trangThai) }
+      `UPDATE lichsukho SET TrangThaiGiaoDich = @trangthai WHERE MaPhieuLienQuan = @maPhieu`,
+      { maPhieu, trangthai: Number(trangthai) }
     );
 
     return NextResponse.json({ ok: true, message: 'Đồng bộ lịch sử thành công' });

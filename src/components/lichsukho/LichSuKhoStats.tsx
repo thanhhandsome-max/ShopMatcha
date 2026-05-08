@@ -195,28 +195,57 @@ export default function LichSuKhoStats({ filter }: LichSuKhoStatsProps) {
         tongTienChuyenNhan: 0,
       };
 
+      // if (Array.isArray(lichSu)) {
+      //   lichSu.forEach((ls: any) => {
+      //     // CHUẨN HÓA DỮ LIỆU ĐỂ SO SÁNH
+      //     const loai = ls.LoaiBienDong?.toString().toUpperCase() || "";
+      //     const soLuong = Number(ls.SoLuong) || 0;
+      //     const tongTien = Number(ls.TongTien) || 0;
+          
+      //     // Trạng thái: Chấp nhận cả số 1 hoặc chuỗi "1"
+      //     const isHoanThanh = ls.TrangThaiGiaoDich == 1;
+
+      //     // 1. NHẬP KHO
+      //     if (loai.includes('NHẬP') || loai.includes('NHAP')) {
+      //       newStats.totalNhap += soLuong;
+      //       if (isHoanThanh) newStats.tongTienNhap += tongTien;
+      //     } 
+      //     // 2. XUẤT KHO
+      //     else if (loai.includes('XUẤT') || loai.includes('XUAT')) {
+      //       newStats.totalXuat += soLuong;
+      //       if (isHoanThanh) newStats.tongTienXuat += tongTien;
+      //     } 
+      //     // 3. CHUYỂN & NHẬN HÀNG
+      //     else if (loai.includes('CHUYỂN') || loai.includes('CHUYEN') || loai.includes('NHẬN') || loai.includes('NHAN')) {
+      //       newStats.totalChuyenNhan += soLuong;
+      //       if (isHoanThanh) newStats.tongTienChuyenNhan += tongTien;
+      //     }
+      //   });
+      // }
       if (Array.isArray(lichSu)) {
         lichSu.forEach((ls: any) => {
-          // CHUẨN HÓA DỮ LIỆU ĐỂ SO SÁNH
-          const loai = ls.LoaiBienDong?.toString().toUpperCase() || "";
+          // 1. Chuẩn hóa chuỗi: Bỏ dấu, viết hoa, xóa khoảng trắng để so sánh chính xác nhất
+          const loaiRaw = ls.LoaiBienDong ? ls.LoaiBienDong.toString().trim().toUpperCase() : "";
+          
+          // Tạo bản không dấu để so sánh an toàn (Optional nhưng nên có)
+          const loaiSafe = loaiRaw.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
           const soLuong = Number(ls.SoLuong) || 0;
           const tongTien = Number(ls.TongTien) || 0;
           
-          // Trạng thái: Chấp nhận cả số 1 hoặc chuỗi "1"
+          // 2. So sánh trạng thái (Dùng == để chấp nhận cả "1" và 1)
           const isHoanThanh = ls.TrangThaiGiaoDich == 1;
 
-          // 1. NHẬP KHO
-          if (loai.includes('NHẬP')) {
+          // 3. Phân loại logic dựa trên chuỗi gốc (loaiRaw) hoặc chuỗi không dấu (loaiSafe)
+          if (loaiSafe.includes('NHAP')) {
             newStats.totalNhap += soLuong;
             if (isHoanThanh) newStats.tongTienNhap += tongTien;
           } 
-          // 2. XUẤT KHO
-          else if (loai.includes('XUẤT')) {
+          else if (loaiSafe.includes('XUAT')) {
             newStats.totalXuat += soLuong;
             if (isHoanThanh) newStats.tongTienXuat += tongTien;
           } 
-          // 3. CHUYỂN & NHẬN HÀNG
-          else if (loai.includes('CHUYỂN') || loai.includes('NHẬN')) {
+          else if (loaiSafe.includes('CHUYEN') || loaiSafe.includes('NHAN')) {
             newStats.totalChuyenNhan += soLuong;
             if (isHoanThanh) newStats.tongTienChuyenNhan += tongTien;
           }
@@ -230,6 +259,12 @@ export default function LichSuKhoStats({ filter }: LichSuKhoStatsProps) {
       setLoading(false);
     }
   };
+
+    
+  
+      
+
+     
 
   // COMPONENT CON: CARD THỐNG KÊ
   const StatCard = ({ title, quantity, amount, color, icon }: { 

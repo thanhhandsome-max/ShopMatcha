@@ -143,11 +143,11 @@ export default function DanhSachPhieuForm({ type = 'nhap' }: DanhSachPhieuProps)
 
                   <td className="px-6 py-5">
                     <span className={`text-[10px] font-black px-3 py-1.5 rounded-xl shadow-sm border ${
-                      p.TrangThai === 1 
+                      p.trangthai || p.TrangThai === 1 
                       ? 'bg-green-50 text-green-700 border-green-100' 
                       : 'bg-orange-50 text-orange-700 border-orange-100 animate-pulse'
                     }`}>
-                      {p.TrangThai === 1 ? '✅ HOÀN THÀNH' : '⏳ CHỜ XỬ LÝ'}
+                      {p.trangthai || p.TrangThai === 1 ? '✅ HOÀN THÀNH' : '⏳ CHỜ XỬ LÝ'}
                     </span>
                   </td>
 

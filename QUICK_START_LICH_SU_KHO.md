@@ -31,11 +31,11 @@ CREATE TABLE lichsukho (
   MaSP VARCHAR(20) NOT NULL,
   MaKho VARCHAR(20) NULL,
   MaCH VARCHAR(20) NULL,
-  LoaiGiaoDich VARCHAR(20) NOT NULL, -- 'nhap', 'xuat', 'chuyen'
+  LoaiBienDong VARCHAR(20) NOT NULL, -- 'nhap', 'xuat', 'chuyen'
   SoLuong INT NOT NULL,
   GiaTien DECIMAL(10,2) NULL,
   TongTien DECIMAL(10,2) NULL,
-  MaPhieu VARCHAR(20) NOT NULL,
+  MaPhieuLienQuan VARCHAR(20) NOT NULL,
   MaNhanVien VARCHAR(20) NULL,
   GhiChu NVARCHAR(500) NULL,
   NgayTao DATETIME DEFAULT GETDATE(),
@@ -50,9 +50,9 @@ CREATE TABLE lichsukho (
 CREATE INDEX idx_lichsu_kho ON lichsukho(MaKho);
 CREATE INDEX idx_lichsu_ch ON lichsukho(MaCH);
 CREATE INDEX idx_lichsu_sp ON lichsukho(MaSP);
-CREATE INDEX idx_lichsu_phieu ON lichsukho(MaPhieu);
+CREATE INDEX idx_lichsu_phieu ON lichsukho(MaPhieuLienQuan);
 CREATE INDEX idx_lichsu_date ON lichsukho(NgayTao);
-CREATE INDEX idx_lichsu_loai ON lichsukho(LoaiGiaoDich);
+CREATE INDEX idx_lichsu_loai ON lichsukho(LoaiBienDong);
 ```
 
 ### Step 2: Start the Application

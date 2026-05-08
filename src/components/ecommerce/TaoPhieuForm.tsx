@@ -22,7 +22,7 @@ export default function TaoPhieuForm({ forcedType, onSuccess }: TaoPhieuFormProp
   const [phieu, setPhieu] = useState<any>({
     MaNV: '',
     NgayTao: new Date().toISOString().split('T')[0],
-    TongTien: '',
+    TongTien: 0,
     MaNPP: '', MaKho: '', MaCH: '', MaCH_Xuat: '', MaCH_Nhan: '', MaPC: ''
   });
 
@@ -39,7 +39,7 @@ export default function TaoPhieuForm({ forcedType, onSuccess }: TaoPhieuFormProp
     setPhieu({
       MaNV: phieu.MaNV, // Giữ lại mã nhân viên cho tiện
       NgayTao: new Date().toISOString().split('T')[0],
-      TongTien: '',
+      TongTien: 0,
       MaNPP: '', MaKho: '', MaCH: '', MaCH_Xuat: '', MaCH_Nhan: '', MaPC: ''
     });
     setChiTiet([]);
@@ -55,8 +55,8 @@ export default function TaoPhieuForm({ forcedType, onSuccess }: TaoPhieuFormProp
       TongTien: parseFloat(tongTienSP) || 0
     };
     setChiTiet([...chitiet, newItem]);
-    // Tính lại tổng tiền phiếu
-    setPhieu({ ...phieu, TongTien: phieu.TongTien + newItem.TongTien });
+    // Tính lại tổng tiền phiếu - Ép kiểu number để cộng đúng
+    setPhieu({ ...phieu, TongTien: Number(phieu.TongTien) + Number(newItem.TongTien) });
     setMaSP(''); setSoLuong(''); setTongTienSP('');
   };
 
@@ -118,63 +118,63 @@ export default function TaoPhieuForm({ forcedType, onSuccess }: TaoPhieuFormProp
         <div className="space-y-4 mb-8">
           {/* Thông tin chung */}
           <div className="grid grid-cols-2 gap-4">
-            <input className="w-full border-2 border-gray-100 p-3 rounded-2xl focus:border-purple-500 outline-none text-sm" placeholder="Mã Nhân Viên" required value={phieu.MaNV} onChange={(e) => setPhieu({ ...phieu, MaNV: e.target.value })} />
+            <input className="w-full border-2 border-gray-100 p-3 rounded-2xl focus:border-purple-500 outline-none text-sm" placeholder="Mã Nhân Viên (NVXXX)" required value={phieu.MaNV} onChange={(e) => setPhieu({ ...phieu, MaNV: e.target.value })} />
             <input className="w-full border-2 border-gray-100 p-3 rounded-2xl outline-none text-sm" type="date" value={phieu.NgayTao} onChange={(e) => setPhieu({ ...phieu, NgayTao: e.target.value })} />
           </div>
 
           {/* Input linh hoạt theo loại phiếu */}
           {activeType === 'nhap' && (
             <div className="grid grid-cols-2 gap-4">
-              <input className="border-2 border-gray-100 p-3 rounded-2xl outline-none text-sm" placeholder="Mã Nhà PP" required value={phieu.MaNPP} onChange={(e) => setPhieu({ ...phieu, MaNPP: e.target.value })} />
-              <input className="border-2 border-gray-100 p-3 rounded-2xl outline-none text-sm" placeholder="Nhập vào Kho" required value={phieu.MaKho} onChange={(e) => setPhieu({ ...phieu, MaKho: e.target.value })} />
+              <input className="border-2 border-gray-100 p-3 rounded-2xl outline-none text-sm" placeholder="Mã Nhà PP (NPPXXX)" required value={phieu.MaNPP} onChange={(e) => setPhieu({ ...phieu, MaNPP: e.target.value })} />
+              <input className="border-2 border-gray-100 p-3 rounded-2xl outline-none text-sm" placeholder="Nhập vào Kho (KXXX)" required value={phieu.MaKho} onChange={(e) => setPhieu({ ...phieu, MaKho: e.target.value })} />
             </div>
           )}
 
           {activeType === 'xuat' && (
             <div className="grid grid-cols-2 gap-4">
-              <input className="border-2 border-gray-100 p-3 rounded-2xl outline-none text-sm" placeholder="Từ Kho Xuất" required value={phieu.MaKho} onChange={(e) => setPhieu({ ...phieu, MaKho: e.target.value })} />
-              <input className="border-2 border-gray-100 p-3 rounded-2xl outline-none text-sm" placeholder="Đến Cửa Hàng" required value={phieu.MaCH} onChange={(e) => setPhieu({ ...phieu, MaCH: e.target.value })} />
+              <input className="border-2 border-gray-100 p-3 rounded-2xl outline-none text-sm" placeholder="Từ Kho Xuất (KXXX)" required value={phieu.MaKho} onChange={(e) => setPhieu({ ...phieu, MaKho: e.target.value })} />
+              <input className="border-2 border-gray-100 p-3 rounded-2xl outline-none text-sm" placeholder="Đến Cửa Hàng (CHXXX)" required value={phieu.MaCH} onChange={(e) => setPhieu({ ...phieu, MaCH: e.target.value })} />
             </div>
           )}
 
           {activeType === 'chuyen' && (
             <div className="grid grid-cols-2 gap-4">
-              <input className="border-2 border-gray-100 p-3 rounded-2xl outline-none text-sm" placeholder="Cửa Hàng Xuất" required value={phieu.MaCH_Xuat} onChange={(e) => setPhieu({ ...phieu, MaCH_Xuat: e.target.value })} />
-              <input className="border-2 border-gray-100 p-3 rounded-2xl outline-none text-sm" placeholder="Cửa Hàng Nhận" required value={phieu.MaCH_Nhan} onChange={(e) => setPhieu({ ...phieu, MaCH_Nhan: e.target.value })} />
+              <input className="border-2 border-gray-100 p-3 rounded-2xl outline-none text-sm" placeholder="Cửa Hàng Xuất (CHXXX)" required value={phieu.MaCH_Xuat} onChange={(e) => setPhieu({ ...phieu, MaCH_Xuat: e.target.value })} />
+              <input className="border-2 border-gray-100 p-3 rounded-2xl outline-none text-sm" placeholder="Cửa Hàng Nhận (CHXXX)" required value={phieu.MaCH_Nhan} onChange={(e) => setPhieu({ ...phieu, MaCH_Nhan: e.target.value })} />
             </div>
           )}
 
           {activeType === 'nhan' && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <input className="border-2 border-gray-100 p-3 rounded-2xl outline-none text-sm" placeholder="Mã Phiếu Chuyển (MaPC)" required value={phieu.MaPC} onChange={(e) => setPhieu({ ...phieu, MaPC: e.target.value })} />
-                <input className="border-2 border-gray-100 p-3 rounded-2xl outline-none text-sm" placeholder="CH Nhận Thực Tế" required value={phieu.MaCH} onChange={(e) => setPhieu({ ...phieu, MaCH: e.target.value })} />
+                <input className="border-2 border-gray-100 p-3 rounded-2xl outline-none text-sm" placeholder="Mã Phiếu Chuyển (PCXXX)" required value={phieu.MaPC} onChange={(e) => setPhieu({ ...phieu, MaPC: e.target.value })} />
+                <input className="border-2 border-gray-100 p-3 rounded-2xl outline-none text-sm" placeholder="CH Nhận Thực Tế (CHXXX)" required value={phieu.MaCH} onChange={(e) => setPhieu({ ...phieu, MaCH: e.target.value })} />
               </div>
               <p className="text-[10px] text-green-600 font-bold italic px-2">* Hệ thống sẽ tự động hoàn thành phiếu chuyển liên quan.</p>
             </div>
           )}
 
-          <div className="pt-2">
+          {/* <div className="pt-2">
             <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Tổng giá trị phiếu</label>
             <input 
-              className="w-full border-2 border-gray-100 p-3 rounded-2xl outline-none font-black text-blue-600 bg-gray-50 focus:border-blue-400 transition-all" 
+              className="w-full border-2 border-gray-100 p-3 rounded-2xl outline-none bg-gray-50 focus:border-blue-400 transition-all" 
               type="number" 
-              // THAY ĐỔI: placeholder hiện chữ mờ
-              placeholder="Nhập tổng giá trị (VNĐ)..." 
-              // THAY ĐỔI: Nếu giá trị là 0 hoặc rỗng thì để trống để placeholder hiện lên
+              placeholder="Tổng giá trị (VNĐ)..." 
               value={phieu.TongTien || ''} 
-              onChange={(e) => setPhieu({ ...phieu, TongTien: e.target.value })} 
+              onChange={(e) => setPhieu({ ...phieu, TongTien: Number(e.target.value) || 0 })} 
             />
           </div>
-        </div>
+        </div> */}
 
         {/* INPUT THÊM SẢN PHẨM (Ẩn khi đi Nhận hàng vì đã có MaPC) */}
         {activeType !== 'nhan' && (
           <div className="p-5 rounded-3xl border-2 border-dashed border-gray-200 mb-6 bg-gray-50">
             <div className="flex gap-2 items-center">
-              <input className="flex-1 p-3 rounded-xl text-xs border border-gray-200 outline-none" placeholder="Mã SP" value={maSP} onChange={(e) => setMaSP(e.target.value)} />
+              <input className="flex-1 p-3 rounded-xl text-xs border border-gray-200 outline-none" placeholder="Mã SP(SPXXX)" value={maSP} onChange={(e) => setMaSP(e.target.value)} />
               <input className="w-20 p-3 rounded-xl text-xs border border-gray-200 outline-none" type="number" placeholder="SL" value={soLuong} onChange={(e) => setSoLuong(e.target.value)} />
               {activeType === 'nhap' && <input className="w-24 p-3 rounded-xl text-xs border border-gray-200 outline-none" type="number" placeholder="Giá" value={tongTienSP} onChange={(e) => setTongTienSP(e.target.value)} />}
+              {activeType === 'xuat' && <input className="w-24 p-3 rounded-xl text-xs border border-gray-200 outline-none" type="number" placeholder="Giá" value={tongTienSP} onChange={(e) => setTongTienSP(e.target.value)} />}
+              {activeType === 'chuyen' && <input className="w-24 p-3 rounded-xl text-xs border border-gray-200 outline-none" type="number" placeholder="Giá" value={tongTienSP} onChange={(e) => setTongTienSP(e.target.value)} />}
               <button type="button" onClick={handleAddProduct} className={`px-4 py-3 rounded-xl text-white font-black text-[10px] transition-all shadow-md ${currentTheme.bg}`}>
                 + THÊM
               </button>
@@ -203,6 +203,18 @@ export default function TaoPhieuForm({ forcedType, onSuccess }: TaoPhieuFormProp
             </table>
           </div>
         )}
+        <div className="pt-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Tổng giá trị phiếu</label>
+            <input 
+              className="w-full border-2 border-gray-100 p-3 rounded-2xl outline-none bg-gray-50 focus:border-blue-400 transition-all" 
+              type="number" 
+              placeholder="Tổng giá trị (VNĐ)..." 
+              value={phieu.TongTien || ''} 
+              onChange={(e) => setPhieu({ ...phieu, TongTien: Number(e.target.value) || 0 })} 
+              readOnly={activeType !== 'nhan'} 
+            />
+          </div>
+        </div>
 
         {/* HIỂN THỊ TRẠNG THÁI TỰ ĐỘNG */}
         <div className="p-4 rounded-2xl bg-gray-50 border-2 border-gray-100 flex items-center justify-center mb-8">

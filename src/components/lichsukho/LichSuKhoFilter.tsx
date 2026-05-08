@@ -2,97 +2,116 @@
 
 import { useState } from 'react';
 
-interface LichSuKhoFilterProps {
+interface FilterProps {
   onFilterChange: (filter: any) => void;
 }
 
-export default function LichSuKhoFilter({ onFilterChange }: LichSuKhoFilterProps) {
-  const [type, setType] = useState<'nhap' | 'xuat' | 'chuyen' | ''>('');
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
+export default function LichSuKhoFilter({ onFilterChange }: FilterProps) {
+  const [tempFilter, setTempFilter] = useState({
+    type: '',
+    kho: '',
+    sanpham: '',
+    startDate: '',
+    endDate: '',
+  });
 
-  const handleFilterChange = () => {
-    const filter: any = {};
-
-    if (type) {
-      filter.type = type;
-    }
-
-    if (startDate) {
-      filter.startDate = new Date(startDate);
-    }
-
-    if (endDate) {
-      filter.endDate = new Date(endDate);
-    }
-
-    onFilterChange(filter);
+  // Gửi bộ lọc lên cha khi nhấn nút TÌM KIẾM
+  const handleApplyFilter = () => {
+    onFilterChange(tempFilter);
   };
 
+  // Xóa toàn bộ bộ lọc
   const handleReset = () => {
-    setType('');
-    setStartDate('');
-    setEndDate('');
-    onFilterChange({});
+    const emptyFilter = { type: '', kho: '', sanpham: '', startDate: '', endDate: '' };
+    setTempFilter(emptyFilter);
+    onFilterChange(emptyFilter);
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-      <h3 className="text-lg font-bold mb-4">Bộ lọc lịch sử kho</h3>
+    <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-6">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-lg">🔍</span>
+        <h3 className="text-xs font-black uppercase tracking-widest text-gray-800">Bộ lọc thông minh</h3>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Loại giao dịch */}
-        <div>
-          <label className="block text-sm font-medium mb-2">Loại giao dịch</label>
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value as any)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        
+        {/* Lọc theo Loại */}
+        <div className="space-y-1">
+          <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Loại giao dịch</label>
+          <select 
+            className="w-full border-2 border-gray-50 p-2.5 rounded-2xl outline-none focus:border-purple-500 text-xs font-bold bg-gray-50/50"
+            value={tempFilter.type}
+            onChange={(e) => setTempFilter({ ...tempFilter, type: e.target.value })}
           >
-            <option value="">Tất cả</option>
-            <option value="nhap">Nhập hàng</option>
-            <option value="xuat">Xuất hàng</option>
-            <option value="chuyen">Chuyển hàng</option>
+            <option value="">Tất cả loại</option>
+            <option value="nhap">📥 Nhập hàng</option>
+            <option value="xuat">📤 Xuất hàng</option>
+            <option value="chuyen">🚛 Chuyển kho</option>
+            <option value="nhan">✅ Nhận hàng</option>
           </select>
         </div>
 
-        {/* Từ ngày */}
-        <div>
-          <label className="block text-sm font-medium mb-2">Từ ngày</label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        {/* Lọc theo Kho/CH */}
+        <div className="space-y-1">
+          <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Kho / Cửa hàng</label>
+          <input 
+            className="w-full border-2 border-gray-50 p-2.5 rounded-2xl outline-none focus:border-purple-500 text-xs font-bold bg-gray-50/50"
+            placeholder="Mã Kho hoặc Mã CH"
+            value={tempFilter.kho}
+            onChange={(e) => setTempFilter({ ...tempFilter, kho: e.target.value })}
           />
         </div>
 
-        {/* Đến ngày */}
-        <div>
-          <label className="block text-sm font-medium mb-2">Đến ngày</label>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        {/* Lọc theo Mã SP */}
+        <div className="space-y-1">
+          <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Mã sản phẩm</label>
+          <input 
+            className="w-full border-2 border-gray-50 p-2.5 rounded-2xl outline-none focus:border-purple-500 text-xs font-bold bg-gray-50/50"
+            placeholder="Ví dụ: SP001"
+            value={tempFilter.sanpham}
+            onChange={(e) => setTempFilter({ ...tempFilter, sanpham: e.target.value })}
           />
         </div>
 
-        {/* Nút */}
-        <div className="flex gap-2 items-end">
-          <button
-            onClick={handleFilterChange}
-            className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
-          >
-            Lọc
-          </button>
-          <button
-            onClick={handleReset}
-            className="flex-1 bg-gray-400 text-white px-4 py-2 rounded-md hover:bg-gray-500 transition"
-          >
-            Reset
-          </button>
+        {/* Ngày bắt đầu */}
+        <div className="space-y-1">
+          <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Từ ngày</label>
+          <input 
+            type="date"
+            className="w-full border-2 border-gray-50 p-2.5 rounded-2xl outline-none focus:border-purple-500 text-xs font-bold bg-gray-50/50"
+            value={tempFilter.startDate}
+            onChange={(e) => setTempFilter({ ...tempFilter, startDate: e.target.value })}
+          />
         </div>
+
+        {/* Ngày kết thúc */}
+        <div className="space-y-1">
+          <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Đến ngày</label>
+          <input 
+            type="date"
+            className="w-full border-2 border-gray-50 p-2.5 rounded-2xl outline-none focus:border-purple-500 text-xs font-bold bg-gray-50/50"
+            value={tempFilter.endDate}
+            onChange={(e) => setTempFilter({ ...tempFilter, endDate: e.target.value })}
+          />
+        </div>
+
+      </div>
+
+      {/* NÚT THAO TÁC */}
+      <div className="flex justify-end gap-2 mt-6">
+        <button 
+          onClick={handleReset}
+          className="px-6 py-2.5 rounded-2xl text-[10px] font-black text-gray-400 hover:bg-gray-100 transition-all uppercase"
+        >
+          Xóa lọc
+        </button>
+        <button 
+          onClick={handleApplyFilter}
+          className="px-8 py-2.5 rounded-2xl text-[10px] font-black text-white bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-100 transition-all uppercase tracking-widest"
+        >
+          Áp dụng bộ lọc
+        </button>
       </div>
     </div>
   );

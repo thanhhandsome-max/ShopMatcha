@@ -350,7 +350,7 @@ export interface ILichSuKho {
   TenKho?: string;
   MaCH?: string; // Cửa hàng
   TenCH?: string;
-  LoaiGiaoDich: 'nhap' | 'xuat' | 'chuyen'; // Loại: nhập, xuất, chuyển
+  LoaiBienDong: 'nhap' | 'xuat' | 'chuyen' | 'nhan'; // Loại: nhập, xuất, chuyển, nhận
   SoLuong: number;
   GiaTien?: number;
   TongTien?: number;

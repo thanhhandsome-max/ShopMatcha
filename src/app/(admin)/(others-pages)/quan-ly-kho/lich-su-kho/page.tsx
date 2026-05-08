@@ -57,7 +57,7 @@ export default function LichSuKhoPage() {
 
         {/* 3. KHU VỰC BỘ LỌC (FILTER) */}
         <section className="animate-in fade-in slide-in-from-left-4 duration-700">
-          <LichSuKhoFilter onFilter={handleFilterChange} />
+          <LichSuKhoFilter onFilterChange={handleFilterChange} />
         </section>
 
         {/* 4. BẢNG DỮ LIỆU CHI TIẾT (TABLE) */}
