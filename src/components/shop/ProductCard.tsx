@@ -41,8 +41,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     >
       <Link href={`/products/${product.id}`} className="block">
         {/* Image */}
-        <div className="relative aspect-square overflow-hidden bg-gray-50">
-          <picture>
+        <div className="relative aspect-[4/3] overflow-hidden bg-gray-50">
             <img
               src={isHovered && product.imageHover ? product.imageHover : product.image}
               alt={product.name}
@@ -51,7 +50,6 @@ export default function ProductCard({ product }: ProductCardProps) {
                 (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500"%3E%3Crect width="500" height="500" fill="%23e5e7eb"/%3E%3Ctext x="250" y="250" font-size="20" fill="%239ca3af" text-anchor="middle" dominant-baseline="middle"%3EImage Not Available%3C/text%3E%3C/svg%3E';
               }}
             />
-          </picture>
           {/* Tags */}
           {tags.includes("bestseller") && (
             <span className="absolute top-3 left-3 z-10 bg-[#2D5016] text-white text-[10px] tracking-wider px-2 py-1 uppercase font-medium">
