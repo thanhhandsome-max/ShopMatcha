@@ -3,7 +3,7 @@ import { ApexOptions } from "apexcharts";
 import dynamic from "next/dynamic";
 import { MoreDotIcon } from "@/icons";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 
 // Dynamically import the ReactApexChart component
@@ -12,6 +12,44 @@ const ReactApexChart = dynamic(() => import("react-apexcharts"), {
 });
 
 export default function MonthlySalesChart() {
+  const [series, setSeries] = useState([
+    {
+      name: "Doanh thu",
+      data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    },
+  ]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch('/api/cua-hang/doanh-thu');
+        const data = await res.json();
+        
+        // Tính toán doanh thu theo tháng
+        const monthlyData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        const dailyRevenue = data.data?.dailyRevenue || [];
+        
+        dailyRevenue.forEach((item: { Ngay: string; DoanhThu: number }) => {
+          if (item.Ngay) {
+            const date = new Date(item.Ngay);
+            const month = date.getMonth();
+            monthlyData[month] = (monthlyData[month] || 0) + (item.DoanhThu || 0);
+          }
+        });
+
+        setSeries([{ name: "Doanh thu", data: monthlyData }]);
+      } catch (error) {
+        console.error('Error fetching sales data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   const options: ApexOptions = {
     colors: ["#465fff"],
     chart: {
@@ -40,18 +78,18 @@ export default function MonthlySalesChart() {
     },
     xaxis: {
       categories: [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
+        "Tháng 1",
+        "Tháng 2",
+        "Tháng 3",
+        "Tháng 4",
+        "Tháng 5",
+        "Tháng 6",
+        "Tháng 7",
+        "Tháng 8",
+        "Tháng 9",
+        "Tháng 10",
+        "Tháng 11",
+        "Tháng 12",
       ],
       axisBorder: {
         show: false,
@@ -91,15 +129,8 @@ export default function MonthlySalesChart() {
       },
     },
   };
-  const series = [
-    {
-      name: "Sales",
-      data: [168, 385, 201, 298, 187, 195, 291, 110, 215, 390, 280, 112],
-    },
-  ];
-  const [isOpen, setIsOpen] = useState(false);
 
-  function toggleDropdown() {
+  const handleToggleDropdown = () => {
     setIsOpen(!isOpen);
   }
 
@@ -111,11 +142,11 @@ export default function MonthlySalesChart() {
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-          Monthly Sales
+          Doanh thu hàng tháng
         </h3>
 
         <div className="relative inline-block">
-          <button onClick={toggleDropdown} className="dropdown-toggle">
+          <button onClick={handleToggleDropdown} className="dropdown-toggle">
             <MoreDotIcon className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300" />
           </button>
           <Dropdown
@@ -127,13 +158,13 @@ export default function MonthlySalesChart() {
               onItemClick={closeDropdown}
               className="flex w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
             >
-              View More
+              Xem thêm
             </DropdownItem>
             <DropdownItem
               onItemClick={closeDropdown}
               className="flex w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
             >
-              Delete
+              Xóa
             </DropdownItem>
           </Dropdown>
         </div>

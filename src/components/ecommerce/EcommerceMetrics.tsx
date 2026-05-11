@@ -1,9 +1,36 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Badge from "../ui/badge/Badge";
 import { ArrowDownIcon, ArrowUpIcon, BoxIconLine, GroupIcon } from "@/icons";
 
 export const EcommerceMetrics = () => {
+  const [khachHang, setKhachHang] = useState(0);
+  const [donHang, setDonHang] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [resKH, resDH] = await Promise.all([
+          fetch('/api/khach-hang'),
+          fetch('/api/don-hang')
+        ]);
+        
+        const dataKH = await resKH.json();
+        const dataDH = await resDH.json();
+        
+        setKhachHang(dataKH.data?.length || 0);
+        setDonHang(dataDH.donHang?.length || 0);
+      } catch (error) {
+        console.error('Error fetching metrics:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6">
       {/* <!-- Metric Item Start --> */}
@@ -15,15 +42,15 @@ export const EcommerceMetrics = () => {
         <div className="flex items-end justify-between mt-5">
           <div>
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              Customers
+              Khách hàng
             </span>
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              3,782
+              {loading ? "..." : khachHang.toLocaleString()}
             </h4>
           </div>
           <Badge color="success">
             <ArrowUpIcon />
-            11.01%
+            100%
           </Badge>
         </div>
       </div>
@@ -37,16 +64,16 @@ export const EcommerceMetrics = () => {
         <div className="flex items-end justify-between mt-5">
           <div>
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              Orders
+              Đơn hàng
             </span>
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              5,359
+              {loading ? "..." : donHang.toLocaleString()}
             </h4>
           </div>
 
-          <Badge color="error">
-            <ArrowDownIcon className="text-error-500" />
-            9.05%
+          <Badge color="success">
+            <ArrowUpIcon />
+            100%
           </Badge>
         </div>
       </div>
