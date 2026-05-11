@@ -1,12 +1,18 @@
 import { query as dbQuery } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { maHD: string } }
-) {
+/**
+ * Định nghĩa kiểu dữ liệu cho context trong Next.js 15+
+ * params bắt buộc phải được xử lý như một Promise.
+ */
+type RouteContext = {
+  params: Promise<{ maHD: string }>;
+};
+
+export async function DELETE(req: NextRequest, { params }: RouteContext) {
   try {
-    const maHD = params.maHD;
+    // Phải await params trước khi truy cập maHD
+    const { maHD } = await params;
     const body = await req.json();
     const { lyDo } = body;
 
@@ -25,7 +31,7 @@ export async function DELETE(
 
     const trangThai = donHangCheck[0].TrangThai;
     
-    // Chỉ cho phép hủy nếu trạng thái là 0 (nháp), 1 (chờ xử lý) hoặc 2 (đang xử lý)
+    // Chỉ cho phép hủy nếu trạng thái là 1 (chờ thanh toán) hoặc 2 (đang giao)
     if (trangThai > 2) {
       return NextResponse.json(
         { ok: false, error: 'Không thể hủy đơn hàng ở trạng thái hiện tại' },
@@ -33,9 +39,9 @@ export async function DELETE(
       );
     }
 
-    // Cập nhật trạng thái thành 5 (hủy)
+    // Cập nhật trạng thái thành 4 (đã hủy)
     await dbQuery(
-      `UPDATE hoadon SET TrangThai = 5 WHERE MaHD = @maHD`,
+      `UPDATE hoadon SET TrangThai = 4 WHERE MaHD = @maHD`,
       { maHD }
     );
 

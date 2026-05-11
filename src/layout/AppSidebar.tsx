@@ -55,7 +55,10 @@ const navItems: NavItem[] = [
   {
     icon: <BoxCubeIcon />,
     name: "Quản lý đơn hàng",
-    path: "/don-hang",
+    subItems: [
+      { name: "Quản lý đơn hàng", path: "/don-hang", pro: false },
+      { name: "Thống kê đơn hàng", path: "/thong-ke-don-hang", pro: false },
+    ],
   },
   {
     icon: <BoxCubeIcon />,

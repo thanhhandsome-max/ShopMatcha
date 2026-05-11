@@ -4,37 +4,41 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   getDonHangWithFilter,
   getDonHangDetail,
-  getThongKeDonHang,
   huyDonHang,
   updateTrangThaiDonHang,
 } from '@/services/don-hang.service';
-import { IDonHangQuanLy, IChiTietDonHang, IDonHangStats } from '@/types';
+import { IDonHangQuanLy, IChiTietDonHang } from '@/types';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'Tất cả' },
-  { value: '1', label: 'Chờ xử lý' },
-  { value: '2', label: 'Đang xử lý' },
-  { value: '3', label: 'Đang giao' },
-  { value: '4', label: 'Hoàn thành' },
-  { value: '5', label: 'Đã hủy' },
+  { value: '1', label: 'Chờ thanh toán' },
+  { value: '2', label: 'Đang giao' },
+  { value: '3', label: 'Hoàn thành' },
+  { value: '4', label: 'Đã hủy' },
 ];
 
 const STATUS_LABELS: Record<string, string> = {
-  '1': 'Chờ xử lý',
-  '2': 'Đang xử lý',
-  '3': 'Đang giao',
-  '4': 'Hoàn thành',
+  '0': 'Chờ thanh toán',
+  '1': 'Chờ thanh toán',
+  '2': 'Đang giao',
+  '3': 'Hoàn thành',
+  '4': 'Đã hủy',
   '5': 'Đã hủy',
 };
 
 const statusClass = (status?: number) => {
   switch (status) {
-    case 1: return 'bg-amber-50 text-amber-700 border-amber-200';
-    case 2: return 'bg-blue-50 text-blue-700 border-blue-200';
-    case 3: return 'bg-indigo-50 text-indigo-700 border-indigo-200';
-    case 4: return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    case 5: return 'bg-rose-50 text-rose-700 border-rose-200';
-    default: return 'bg-gray-50 text-gray-700 border-gray-200';
+    case 0:
+    case 1:
+      return 'bg-amber-50 text-amber-700 border-amber-200';
+    case 2:
+      return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+    case 3:
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    case 4:
+      return 'bg-rose-50 text-rose-700 border-rose-200';
+    default:
+      return 'bg-gray-50 text-gray-700 border-gray-200';
   }
 };
 
@@ -57,8 +61,6 @@ export default function DonHangPage() {
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const [statsLoading, setStatsLoading] = useState(false);
-  const [orderStats, setOrderStats] = useState<IDonHangStats | null>(null);
   const [filter, setFilter] = useState({
     trangThai: '',
     cuaHang: '',
@@ -73,7 +75,7 @@ export default function DonHangPage() {
     setLoading(true);
     try {
       const data = await getDonHangWithFilter({
-        trangThai: currentFilter.trangThai ? Number(currentFilter.trangThai) : undefined,
+        trangThai: currentFilter.trangThai !== '' ? Number(currentFilter.trangThai) : undefined,
         cuaHang: currentFilter.cuaHang || undefined,
         startDate: currentFilter.startDate ? new Date(currentFilter.startDate) : undefined,
         endDate: currentFilter.endDate ? new Date(currentFilter.endDate) : undefined,
@@ -89,41 +91,22 @@ export default function DonHangPage() {
   };
 
   useEffect(() => {
-    Promise.all([loadOrders(), loadStats()]);
+    loadOrders();
   }, []);
 
   const handleFilterChange = (field: string, value: string) => {
     setFilter((prev) => ({ ...prev, [field]: value }));
   };
 
-  const loadStats = async (currentFilter = filter) => {
-    setStatsLoading(true);
-    try {
-      const data = await getThongKeDonHang({
-        trangThai: currentFilter.trangThai ? Number(currentFilter.trangThai) : undefined,
-        cuaHang: currentFilter.cuaHang || undefined,
-        startDate: currentFilter.startDate ? new Date(currentFilter.startDate) : undefined,
-        endDate: currentFilter.endDate ? new Date(currentFilter.endDate) : undefined,
-        timKiem: currentFilter.timKiem || undefined,
-      });
-      setOrderStats(data.stats);
-    } catch (error) {
-      console.error('Lỗi tải thống kê đơn hàng:', error);
-      setOrderStats(null);
-    } finally {
-      setStatsLoading(false);
-    }
-  };
-
   const handleApplyFilter = async (event: React.FormEvent) => {
     event.preventDefault();
-    await Promise.all([loadOrders(), loadStats()]);
+    await loadOrders();
   };
 
   const handleResetFilter = async () => {
     const emptyFilter = { trangThai: '', cuaHang: '', startDate: '', endDate: '', timKiem: '' };
     setFilter(emptyFilter);
-    await Promise.all([loadOrders(emptyFilter), loadStats(emptyFilter)]);
+    await loadOrders(emptyFilter);
   };
 
   const openDetail = async (order: IDonHangQuanLy) => {
@@ -151,6 +134,7 @@ export default function DonHangPage() {
 
   const handleUpdateStatus = async (status: number) => {
     if (!selectedOrder) return;
+    if (selectedOrder.TrangThai === 3 || selectedOrder.TrangThai === 4) return;
     setActionLoading(true);
     try {
       await updateTrangThaiDonHang(selectedOrder.MaHD, status);
@@ -167,6 +151,7 @@ export default function DonHangPage() {
 
   const handleCancelOrder = async () => {
     if (!selectedOrder) return;
+    if (selectedOrder.TrangThai === 3 || selectedOrder.TrangThai === 4) return;
     if (!cancelReason.trim()) {
       alert('Vui lòng nhập lý do hủy');
       return;
@@ -194,50 +179,9 @@ export default function DonHangPage() {
     <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Quản lý đơn hàng</h1>
-          <p className="text-sm text-gray-500 mt-1">Hệ thống xử lý hóa đơn ShopMatcha.</p>
+          <h1 className="text-3xl font-extrabold text-gray-900">🎯 Quản lý đơn hàng</h1>
+          <p className="text-sm text-gray-500 mt-1">Xử lý và quản lý đơn hàng ShopMatcha. Chuyển trạng thái, hủy đơn hàng, xem chi tiết.</p>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2 xl:grid-cols-5">
-        {[
-          {
-            title: 'Tổng đơn hàng',
-            value: orderStats ? orderStats.totalDonHang : '—',
-            description: 'Số lượng đơn hàng đang có',
-            color: 'bg-indigo-50 text-indigo-700 border-indigo-100',
-          },
-          {
-            title: 'Tổng doanh thu',
-            value: orderStats ? `${orderStats.tongTienDonHang.toLocaleString('vi-VN')}đ` : '—',
-            description: 'Tổng giá trị đơn hàng',
-            color: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-          },
-          {
-            title: 'Đang xử lý',
-            value: orderStats ? orderStats.donDangXuLy : '—',
-            description: 'Đơn đang trong quá trình xử lý',
-            color: 'bg-amber-50 text-amber-700 border-amber-100',
-          },
-          {
-            title: 'Hoàn thành',
-            value: orderStats ? orderStats.donHoanThanh : '—',
-            description: 'Đơn hàng đã hoàn thành',
-            color: 'bg-sky-50 text-sky-700 border-sky-100',
-          },
-          {
-            title: 'Đã hủy',
-            value: orderStats ? orderStats.donHuy : '—',
-            description: 'Đơn hàng đã bị hủy',
-            color: 'bg-rose-50 text-rose-700 border-rose-100',
-          },
-        ].map((metric) => (
-          <div key={metric.title} className={`rounded-[2rem] border px-6 py-5 ${metric.color} border-opacity-50`}>
-            <p className="text-xs font-bold uppercase tracking-[0.3em] text-gray-500 mb-2">{metric.title}</p>
-            <p className="text-3xl font-black text-gray-900">{statsLoading ? 'Đang tải...' : metric.value}</p>
-            <p className="mt-2 text-xs text-gray-500">{metric.description}</p>
-          </div>
-        ))}
       </div>
 
       {/* BỘ LỌC */}
@@ -421,16 +365,16 @@ export default function DonHangPage() {
                     {STATUS_LABELS[String(selectedOrder.TrangThai)] || 'KHÔNG XÁC ĐỊNH'}
                   </div>
                   <div className="grid gap-2.5">
-                    {[1, 2, 3, 4].map((status) => (
-                      <button key={status} disabled={actionLoading || selectedOrder.TrangThai === status || selectedOrder.TrangThai === 5} onClick={() => handleUpdateStatus(status)} className="w-full rounded-2xl border border-gray-200 bg-white py-3 text-sm font-bold text-gray-700 hover:border-brand-500 hover:bg-brand-50 transition-all disabled:opacity-30">Chuyển sang {STATUS_LABELS[String(status)]}</button>
+                    {[2, 3].map((status) => (
+                      <button key={status} disabled={actionLoading || selectedOrder.TrangThai === status || selectedOrder.TrangThai === 3 || selectedOrder.TrangThai === 4} onClick={() => handleUpdateStatus(status)} className="w-full rounded-2xl border border-gray-200 bg-white py-3 text-sm font-bold text-gray-700 hover:border-brand-500 hover:bg-brand-50 transition-all disabled:opacity-30">Chuyển sang {STATUS_LABELS[String(status)]}</button>
                     ))}
                   </div>
                 </div>
 
                 <div className="rounded-3xl border border-rose-100 bg-rose-50/20 p-6">
                   <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} placeholder="Lý do hủy..." className="w-full rounded-2xl border border-rose-100 px-4 py-3 text-sm text-gray-700 outline-none focus:ring-2 focus:ring-rose-500/20 transition-all" rows={3} />
-                  <button onClick={handleCancelOrder} disabled={actionLoading || selectedOrder.TrangThai === 5} className="mt-4 w-full rounded-2xl bg-rose-500 py-4 text-sm font-black text-white shadow-lg hover:bg-rose-600 transition-all active:scale-95 disabled:grayscale">
-                    {selectedOrder.TrangThai === 5 ? 'ĐƠN HÀNG ĐÃ HỦY' : 'XÁC NHẬN HỦY ĐƠN'}
+                  <button onClick={handleCancelOrder} disabled={actionLoading || selectedOrder.TrangThai === 3 || selectedOrder.TrangThai === 4} className="mt-4 w-full rounded-2xl bg-rose-500 py-4 text-sm font-black text-white shadow-lg hover:bg-rose-600 transition-all active:scale-95 disabled:grayscale">
+                    {selectedOrder.TrangThai === 4 ? 'ĐƠN HÀNG ĐÃ HỦY' : selectedOrder.TrangThai === 3 ? 'ĐƠN HÀNG HOÀN THÀNH' : 'XÁC NHẬN HỦY ĐƠN'}
                   </button>
                 </div>
 

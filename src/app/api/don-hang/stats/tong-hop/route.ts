@@ -11,9 +11,16 @@ const buildFilter = (searchParams: URLSearchParams) => {
   const endDate = searchParams.get('endDate');
   const search = searchParams.get('search');
 
-  if (status) {
-    conditions.push('TrangThai = @status');
-    params.status = parseInt(status);
+  if (status !== null && status !== '') {
+    const numericStatus = parseInt(status, 10);
+    if (numericStatus === 1) {
+      conditions.push('TrangThai IN (0, 1)');
+    } else if (numericStatus === 4) {
+      conditions.push('TrangThai IN (4, 5)');
+    } else {
+      conditions.push('TrangThai = @status');
+      params.status = numericStatus;
+    }
   }
 
   if (store) {
@@ -47,10 +54,10 @@ export async function GET(req: NextRequest) {
     const sql = `
       SELECT
         COUNT(*) AS totalDonHang,
-        ISNULL(SUM(CASE WHEN TrangThai = 4 THEN COALESCE(TongTien, 0) ELSE 0 END), 0) AS tongTienDonHang,
-        SUM(CASE WHEN TrangThai IN (2, 3) THEN 1 ELSE 0 END) AS donDangXuLy,
-        SUM(CASE WHEN TrangThai = 4 THEN 1 ELSE 0 END) AS donHoanThanh,
-        SUM(CASE WHEN TrangThai = 5 THEN 1 ELSE 0 END) AS donHuy
+        ISNULL(SUM(CASE WHEN TrangThai = 3 THEN COALESCE(TongTien, 0) ELSE 0 END), 0) AS tongTienDonHang,
+        SUM(CASE WHEN TrangThai = 2 THEN 1 ELSE 0 END) AS donDangXuLy,
+        SUM(CASE WHEN TrangThai = 3 THEN 1 ELSE 0 END) AS donHoanThanh,
+        SUM(CASE WHEN TrangThai = 4 THEN 1 ELSE 0 END) AS donHuy
       FROM hoadon
       ${whereClause}
     `;

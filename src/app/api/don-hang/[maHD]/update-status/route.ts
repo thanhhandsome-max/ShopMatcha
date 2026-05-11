@@ -27,20 +27,30 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    // 2. Kiểm tra sự tồn tại của đơn hàng
-    const checkOrder = await dbQuery(
-      `SELECT MaHD FROM hoadon WHERE MaHD = @maHD`,
+    // 2. Kiểm tra trạng thái hiện tại của đơn hàng
+    const currentOrder = await dbQuery(
+      `SELECT TrangThai FROM hoadon WHERE MaHD = @maHD`,
       { maHD }
     );
 
-    if (!checkOrder || checkOrder.length === 0) {
+    if (!currentOrder || currentOrder.length === 0) {
       return NextResponse.json(
         { ok: false, error: 'Đơn hàng không tồn tại trên hệ thống' },
         { status: 404 }
       );
     }
 
-    // 3. Thực hiện cập nhật vào bảng hoadon
+    const currentStatus = currentOrder[0].TrangThai;
+
+    // 3. Validation: Không cho phép thay đổi trạng thái nếu đã hoàn thành (3) hoặc đã hủy (4)
+    if (currentStatus === 3 || currentStatus === 4) {
+      return NextResponse.json(
+        { ok: false, error: 'Không thể thay đổi trạng thái đơn hàng đã hoàn thành hoặc đã hủy' },
+        { status: 400 }
+      );
+    }
+
+    // 4. Thực hiện cập nhật vào bảng hoadon
     await dbQuery(
       `UPDATE hoadon SET TrangThai = @trangThai WHERE MaHD = @maHD`,
       { trangThai, maHD }

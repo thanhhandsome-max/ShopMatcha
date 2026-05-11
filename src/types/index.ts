@@ -288,6 +288,12 @@ export interface IDonHangStats {
   donHuy: number;
 }
 
+export interface IDonHangStatusStats {
+  order_type: number;
+  totalDonHang: number;
+  tongTien: number;
+}
+
 // =========================================================================
 // NHÓM 4 & 5: CHI TIẾT HÓA ĐƠN & GIAO DỊCH THƯƠNG MẠI
 // =========================================================================

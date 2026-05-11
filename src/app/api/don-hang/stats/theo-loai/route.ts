@@ -43,7 +43,10 @@ const buildFilter = (searchParams: URLSearchParams) => {
     params.search = `%${search}%`;
   }
 
-  return { whereClause: conditions.length ? `WHERE ${conditions.join(' AND ')}` : '', params };
+  return {
+    whereClause: conditions.length ? `WHERE ${conditions.join(' AND ')}` : '',
+    params,
+  };
 };
 
 export async function GET(req: NextRequest) {
@@ -52,17 +55,20 @@ export async function GET(req: NextRequest) {
     const { whereClause, params } = buildFilter(searchParams);
 
     const sql = `
-      SELECT TrangThai, COUNT(*) AS total
+      SELECT
+        TrangThai AS order_type,
+        COUNT(*) AS totalDonHang,
+        SUM(COALESCE(TongTien, 0)) AS tongTien
       FROM hoadon
       ${whereClause}
       GROUP BY TrangThai
+      ORDER BY TrangThai
     `;
 
     const rows = await dbQuery(sql, params);
-
     return NextResponse.json({ ok: true, stats: rows || [] });
   } catch (error: any) {
-    console.error('Error fetching status breakdown stats:', error);
+    console.error('Error fetching order type revenue stats:', error);
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 }

@@ -78,10 +78,9 @@ export async function updateTrangThaiDonHang(maHD: string, trangThai: number, gh
   return handleResponse(res, 'Không thể cập nhật trạng thái đơn hàng');
 }
 
-export const chuyenTrangThaiChoXuLy = (maHD: string) => updateTrangThaiDonHang(maHD, 1, 'Chuyển sang chờ xử lý');
-export const chuyenTrangThaiDangXuLy = (maHD: string) => updateTrangThaiDonHang(maHD, 2, 'Đang xử lý');
-export const chuyenTrangThaiDangGiao = (maHD: string) => updateTrangThaiDonHang(maHD, 3, 'Đang giao hàng');
-export const chuyenTrangThaiHoanThanh = (maHD: string) => updateTrangThaiDonHang(maHD, 4, 'Đã hoàn thành');
+export const chuyenTrangThaiChoThanhToan = (maHD: string) => updateTrangThaiDonHang(maHD, 1, 'Chờ thanh toán');
+export const chuyenTrangThaiDangGiao = (maHD: string) => updateTrangThaiDonHang(maHD, 2, 'Đang giao hàng');
+export const chuyenTrangThaiHoanThanh = (maHD: string) => updateTrangThaiDonHang(maHD, 3, 'Đã hoàn thành');
 
 // ---------------------------------------------------------
 // HỦY & THỐNG KÊ & THANH TOÁN
@@ -132,6 +131,24 @@ export async function getThongKeTheoTrangThai(filter: {
   return handleResponse(res, 'Không thể lấy thống kê trạng thái');
 }
 
+export async function getThongKeTheoTrangThaiDoanhThu(filter: {
+  trangThai?: number;
+  cuaHang?: string;
+  startDate?: Date;
+  endDate?: Date;
+  timKiem?: string;
+} = {}) {
+  const params = new URLSearchParams();
+  if (filter.trangThai !== undefined) params.append('status', filter.trangThai.toString());
+  if (filter.cuaHang) params.append('store', filter.cuaHang);
+  if (filter.startDate) params.append('startDate', filter.startDate.toISOString());
+  if (filter.endDate) params.append('endDate', filter.endDate.toISOString());
+  if (filter.timKiem) params.append('search', filter.timKiem);
+
+  const res = await fetch(`${API_ENDPOINT}/stats/theo-loai?${params.toString()}`, { cache: 'no-store' });
+  return handleResponse(res, 'Không thể lấy thống kê doanh thu theo trạng thái');
+}
+
 export async function updateTrangThaiThanhToan(maHD: string, paymentStatus: number, paymentMethod?: string) {
   const res = await fetch(`${API_ENDPOINT}/${maHD}/update-payment`, {
     method: 'PUT',
@@ -139,4 +156,16 @@ export async function updateTrangThaiThanhToan(maHD: string, paymentStatus: numb
     body: JSON.stringify({ paymentStatus, paymentMethod }),
   });
   return handleResponse(res, 'Không thể cập nhật trạng thái thanh toán');
+}
+
+// ---------------------------------------------------------
+// TỰ ĐỘNG HỦY ĐƠN HÀNG
+// ---------------------------------------------------------
+
+export async function autoCancelExpiredOrders() {
+  const res = await fetch(`${API_ENDPOINT}/auto-cancel`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return handleResponse(res, 'Không thể thực hiện auto cancel đơn hàng');
 }

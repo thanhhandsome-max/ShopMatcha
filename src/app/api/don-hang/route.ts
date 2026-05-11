@@ -42,9 +42,16 @@ export async function GET(req: NextRequest) {
 
     const params: Record<string, any> = {};
 
-    if (status) {
-      sqlQuery += ` AND hd.TrangThai = @status`;
-      params.status = parseInt(status);
+    if (status !== null && status !== '') {
+      const numericStatus = parseInt(status, 10);
+      if (numericStatus === 1) {
+        sqlQuery += ` AND hd.TrangThai IN (0, 1)`;
+      } else if (numericStatus === 4) {
+        sqlQuery += ` AND hd.TrangThai IN (4, 5)`;
+      } else {
+        sqlQuery += ` AND hd.TrangThai = @status`;
+        params.status = numericStatus;
+      }
     }
 
     if (store) {
@@ -158,9 +165,9 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Cập nhật trạng thái thành hủy (giả sử 5 = hủy)
+    // Cập nhật trạng thái thành hủy (4 = đã hủy)
     await dbQuery(
-      `UPDATE hoadon SET TrangThai = 5 WHERE MaHD = @maHD`,
+      `UPDATE hoadon SET TrangThai = 4 WHERE MaHD = @maHD`,
       { maHD }
     );
 

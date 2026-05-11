@@ -25,6 +25,11 @@ export async function PUT(
       params_.paymentMethod = paymentMethod;
     }
 
+    // Nếu thanh toán thành công (paymentStatus = 1), tự động chuyển trạng thái đơn hàng sang "Đang giao" (2)
+    if (paymentStatus === 1) {
+      updateSQL += `, TrangThai = 2`;
+    }
+
     updateSQL += ` WHERE MaHD = @maHD`;
 
     await dbQuery(updateSQL, params_);

@@ -123,9 +123,9 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ ok: false, error: 'Đơn hàng không tồn tại' }, { status: 404 });
     }
 
-    // Cập nhật trạng thái thành 5 (Hủy)[cite: 1]
+    // Cập nhật trạng thái thành 4 (Đã hủy)
     await dbQuery(
-      `UPDATE hoadon SET TrangThai = 5 WHERE MaHD = @maHD`,
+      `UPDATE hoadon SET TrangThai = 4 WHERE MaHD = @maHD`,
       { maHD }
     );
 
