@@ -1,5 +1,7 @@
 'use client';
 
+import { getBackendApiBase } from '@/lib/backendApi';
+import { useCart } from '@/store/useCart';
 import { createContext, useContext, useEffect, useState } from 'react';
 
 export type User = {
@@ -42,9 +44,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   }, []);
 
+  useEffect(() => {
+    if (isLoading) return;
+    if (user) {
+      void useCart.getState().hydrateFromServer();
+    } else {
+      void useCart.getState().clear();
+    }
+  }, [user, isLoading]);
+
   const login = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${getBackendApiBase()}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -76,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (email: string, password: string, fullName: string, phone?: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(`${getBackendApiBase()}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -116,12 +127,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem('htdcha-user');
     localStorage.removeItem('htdcha-token');
-    
-    // Call logout API
-    fetch('http://localhost:5000/api/auth/logout', {
+    void useCart.getState().clear();
+
+    fetch(`${getBackendApiBase()}/auth/logout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-    }).catch(err => console.error('Logout API error:', err));
+    }).catch((err) => console.error('Logout API error:', err));
   };
 
   return (

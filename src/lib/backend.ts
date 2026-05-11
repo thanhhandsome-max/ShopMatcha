@@ -50,15 +50,29 @@ const mapInStock = (product: any): boolean => {
     return product.tonkhocuahang.some((stock: any) => Number(stock.SoLuong) > 0);
   }
 
-  return Boolean(product.TrangThai === '1');
+  return Number(product.TrangThai) === 1;
 };
 
 const mapImage = (product: any): string => {
+  const normalizeImagePath = (value: string): string => {
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      return '';
+    }
+
+    if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith('/') || trimmed.startsWith('data:')) {
+      return trimmed;
+    }
+
+    return `/images/products/${trimmed}`;
+  };
+
   if (product.sanpham_anh && Array.isArray(product.sanpham_anh) && product.sanpham_anh.length > 0) {
-    return product.sanpham_anh[0].DuongDanAnh || product.sanpham_anh[0].Anh || '';
+    return normalizeImagePath(product.sanpham_anh[0].DuongDanAnh || product.sanpham_anh[0].Anh || '');
   }
 
-  return product.image || product.anhDaiDien || '';
+  return normalizeImagePath(product.image || product.anhDaiDien || '');
 };
 
 const mapDescription = (product: any): string => {

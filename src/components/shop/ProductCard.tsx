@@ -1,9 +1,12 @@
 'use client';
 
 import { formatMoneyVND, useCart } from "@/store/useCart";
+import { useAuth } from "@/contexts/AuthContext";
 import { ShoppingBag } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface ProductCardProps {
   product: {
@@ -20,17 +23,31 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const addItem = useCart((s) => s.addItem);
+  const { isLoggedIn } = useAuth();
+  const router = useRouter();
   const tags = product.tags ?? [];
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addItem({
+
+    if (!isLoggedIn) {
+      toast.error("Vui lòng đăng nhập để mua sắm");
+      router.push("/auth/login");
+      return;
+    }
+
+    const result = await addItem({
       productId: product.id,
       name: product.name,
       price: product.price,
       image: product.image,
     });
+    if (result.success) {
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
+    }
   };
 
   return (

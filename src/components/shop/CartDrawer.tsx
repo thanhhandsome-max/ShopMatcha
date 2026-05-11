@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { useCart, formatMoneyVND } from "@/store/useCart";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { toast } from "sonner";
 
 interface CartDrawerProps {
   onClose: () => void;
@@ -83,7 +84,13 @@ export default function CartDrawer({ onClose }: CartDrawerProps) {
                 {/* Quantity controls */}
                 <div className="flex items-center border border-gray-200">
                   <button
-                    onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                    onClick={async () => {
+                      const r = await updateQuantity(
+                        item.productId,
+                        item.quantity - 1
+                      );
+                      if (!r.success && r.message) toast.error(r.message);
+                    }}
                     className="p-1.5 hover:bg-gray-50 transition-colors text-gray-700"
                     aria-label="Giảm"
                   >
@@ -93,7 +100,13 @@ export default function CartDrawer({ onClose }: CartDrawerProps) {
                     {item.quantity}
                   </span>
                   <button
-                    onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                    onClick={async () => {
+                      const r = await updateQuantity(
+                        item.productId,
+                        item.quantity + 1
+                      );
+                      if (!r.success && r.message) toast.error(r.message);
+                    }}
                     className="p-1.5 hover:bg-gray-50 transition-colors text-gray-700"
                     aria-label="Tăng"
                   >
@@ -142,7 +155,7 @@ export default function CartDrawer({ onClose }: CartDrawerProps) {
           TIẾP TỤC MUA SẮM
         </button>
         <button
-          onClick={clear}
+          onClick={() => void clear({ remote: true })}
           className="text-xs text-gray-400 hover:text-red-500 transition-colors underline mx-auto block"
         >
           Xóa tất cả
