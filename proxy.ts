@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
+// import { jwtVerify } from 'jose';
 
 const PUBLIC_PAGE_PATHS = ['/signin', '/signup', '/error-404'];
 const PUBLIC_API_PREFIXES = ['/api/auth/login', '/api/auth/logout', '/api/auth/refresh'];

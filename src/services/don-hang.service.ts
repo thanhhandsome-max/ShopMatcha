@@ -96,13 +96,39 @@ export async function huyDonHang(maHD: string, lyDo: string) {
   return handleResponse(res, 'Không thể hủy đơn hàng');
 }
 
-export async function getThongKeDonHang() {
-  const res = await fetch(`${API_ENDPOINT}/stats/tong-hop`, { cache: 'no-store' });
+export async function getThongKeDonHang(filter: {
+  trangThai?: number;
+  cuaHang?: string;
+  startDate?: Date;
+  endDate?: Date;
+  timKiem?: string;
+} = {}) {
+  const params = new URLSearchParams();
+  if (filter.trangThai !== undefined) params.append('status', filter.trangThai.toString());
+  if (filter.cuaHang) params.append('store', filter.cuaHang);
+  if (filter.startDate) params.append('startDate', filter.startDate.toISOString());
+  if (filter.endDate) params.append('endDate', filter.endDate.toISOString());
+  if (filter.timKiem) params.append('search', filter.timKiem);
+
+  const res = await fetch(`${API_ENDPOINT}/stats/tong-hop?${params.toString()}`, { cache: 'no-store' });
   return handleResponse(res, 'Không thể lấy thống kê tổng hợp');
 }
 
-export async function getThongKeTheoTrangThai() {
-  const res = await fetch(`${API_ENDPOINT}/stats/theo-trang-thai`, { cache: 'no-store' });
+export async function getThongKeTheoTrangThai(filter: {
+  trangThai?: number;
+  cuaHang?: string;
+  startDate?: Date;
+  endDate?: Date;
+  timKiem?: string;
+} = {}) {
+  const params = new URLSearchParams();
+  if (filter.trangThai !== undefined) params.append('status', filter.trangThai.toString());
+  if (filter.cuaHang) params.append('store', filter.cuaHang);
+  if (filter.startDate) params.append('startDate', filter.startDate.toISOString());
+  if (filter.endDate) params.append('endDate', filter.endDate.toISOString());
+  if (filter.timKiem) params.append('search', filter.timKiem);
+
+  const res = await fetch(`${API_ENDPOINT}/stats/theo-trang-thai?${params.toString()}`, { cache: 'no-store' });
   return handleResponse(res, 'Không thể lấy thống kê trạng thái');
 }
 

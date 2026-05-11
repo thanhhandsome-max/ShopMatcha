@@ -47,7 +47,7 @@ const navItems: NavItem[] = [
     icon: <BoxCubeIcon />,
     name: "Quản lý kho",
     subItems: [
-      { name: "Xem tồn kho", path: "/quan-ly-kho", pro: false },
+      // { name: "Xem tồn kho", path: "/quan-ly-kho", pro: false },
       { name: "Tạo phiếu nghiệp vụ", path: "/quan-ly-kho/tao-phieu", pro: false },
       { name: "Lịch sử kho", path: "/quan-ly-kho/lich-su-kho", pro: false },
     ],

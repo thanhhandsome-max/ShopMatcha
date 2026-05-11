@@ -4,10 +4,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   getDonHangWithFilter,
   getDonHangDetail,
+  getThongKeDonHang,
   huyDonHang,
   updateTrangThaiDonHang,
 } from '@/services/don-hang.service';
-import { IDonHangQuanLy, IChiTietDonHang } from '@/types';
+import { IDonHangQuanLy, IChiTietDonHang, IDonHangStats } from '@/types';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'Tất cả' },
@@ -56,6 +57,8 @@ export default function DonHangPage() {
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [orderStats, setOrderStats] = useState<IDonHangStats | null>(null);
   const [filter, setFilter] = useState({
     trangThai: '',
     cuaHang: '',
@@ -86,22 +89,41 @@ export default function DonHangPage() {
   };
 
   useEffect(() => {
-    loadOrders();
+    Promise.all([loadOrders(), loadStats()]);
   }, []);
 
   const handleFilterChange = (field: string, value: string) => {
     setFilter((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleApplyFilter = (event: React.FormEvent) => {
-    event.preventDefault();
-    loadOrders();
+  const loadStats = async (currentFilter = filter) => {
+    setStatsLoading(true);
+    try {
+      const data = await getThongKeDonHang({
+        trangThai: currentFilter.trangThai ? Number(currentFilter.trangThai) : undefined,
+        cuaHang: currentFilter.cuaHang || undefined,
+        startDate: currentFilter.startDate ? new Date(currentFilter.startDate) : undefined,
+        endDate: currentFilter.endDate ? new Date(currentFilter.endDate) : undefined,
+        timKiem: currentFilter.timKiem || undefined,
+      });
+      setOrderStats(data.stats);
+    } catch (error) {
+      console.error('Lỗi tải thống kê đơn hàng:', error);
+      setOrderStats(null);
+    } finally {
+      setStatsLoading(false);
+    }
   };
 
-  const handleResetFilter = () => {
+  const handleApplyFilter = async (event: React.FormEvent) => {
+    event.preventDefault();
+    await Promise.all([loadOrders(), loadStats()]);
+  };
+
+  const handleResetFilter = async () => {
     const emptyFilter = { trangThai: '', cuaHang: '', startDate: '', endDate: '', timKiem: '' };
     setFilter(emptyFilter);
-    loadOrders(emptyFilter);
+    await Promise.all([loadOrders(emptyFilter), loadStats(emptyFilter)]);
   };
 
   const openDetail = async (order: IDonHangQuanLy) => {
@@ -175,6 +197,47 @@ export default function DonHangPage() {
           <h1 className="text-2xl font-bold text-gray-800">Quản lý đơn hàng</h1>
           <p className="text-sm text-gray-500 mt-1">Hệ thống xử lý hóa đơn ShopMatcha.</p>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2 xl:grid-cols-5">
+        {[
+          {
+            title: 'Tổng đơn hàng',
+            value: orderStats ? orderStats.totalDonHang : '—',
+            description: 'Số lượng đơn hàng đang có',
+            color: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+          },
+          {
+            title: 'Tổng doanh thu',
+            value: orderStats ? `${orderStats.tongTienDonHang.toLocaleString('vi-VN')}đ` : '—',
+            description: 'Tổng giá trị đơn hàng',
+            color: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+          },
+          {
+            title: 'Đang xử lý',
+            value: orderStats ? orderStats.donDangXuLy : '—',
+            description: 'Đơn đang trong quá trình xử lý',
+            color: 'bg-amber-50 text-amber-700 border-amber-100',
+          },
+          {
+            title: 'Hoàn thành',
+            value: orderStats ? orderStats.donHoanThanh : '—',
+            description: 'Đơn hàng đã hoàn thành',
+            color: 'bg-sky-50 text-sky-700 border-sky-100',
+          },
+          {
+            title: 'Đã hủy',
+            value: orderStats ? orderStats.donHuy : '—',
+            description: 'Đơn hàng đã bị hủy',
+            color: 'bg-rose-50 text-rose-700 border-rose-100',
+          },
+        ].map((metric) => (
+          <div key={metric.title} className={`rounded-[2rem] border px-6 py-5 ${metric.color} border-opacity-50`}>
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-gray-500 mb-2">{metric.title}</p>
+            <p className="text-3xl font-black text-gray-900">{statsLoading ? 'Đang tải...' : metric.value}</p>
+            <p className="mt-2 text-xs text-gray-500">{metric.description}</p>
+          </div>
+        ))}
       </div>
 
       {/* BỘ LỌC */}
