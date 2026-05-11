@@ -19,7 +19,7 @@ export const sanPhamService = {
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || 'Create failed');
-        return json;
+        return json.data || json;
     },
     async update(maSP: string, payload: SanPhamPayload) {
         const res = await fetch(base, {
@@ -29,7 +29,7 @@ export const sanPhamService = {
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || 'Update failed');
-        return json;
+        return json.data || json;
     },
     async delete(maSP: string) {
         const res = await fetch(base, {

@@ -16,10 +16,12 @@ export default function LoaiSanPhamPage() {
     const [showAddForm, setShowAddForm] = useState(false);
     const [newMaLoai, setNewMaLoai] = useState('');
     const [newTenLoai, setNewTenLoai] = useState('');
+    const [newMoTa, setNewMoTa] = useState('');
 
     // State cho Form sửa inline
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editingTen, setEditingTen] = useState('');
+    const [editingMoTa, setEditingMoTa] = useState('');
 
     const loadData = async () => {
         setIsLoading(true);
@@ -44,10 +46,12 @@ export default function LoaiSanPhamPage() {
         try {
             await loaiSanPhamService.create({
                 MaLoai: newMaLoai || `LSP${Date.now()}`.substring(0, 10),
-                TenLoai: newTenLoai
+                TenLoai: newTenLoai,
+                MoTa: newMoTa || undefined
             });
             setNewMaLoai('');
             setNewTenLoai('');
+            setNewMoTa('');
             setShowAddForm(false);
             loadData();
         } catch (error) {
@@ -59,6 +63,7 @@ export default function LoaiSanPhamPage() {
         setShowAddForm(false);
         setNewMaLoai('');
         setNewTenLoai('');
+        setNewMoTa('');
     };
 
     const handleDelete = async (maLoai: string) => {
@@ -71,18 +76,20 @@ export default function LoaiSanPhamPage() {
         }
     };
 
-    const handleEdit = (maLoai: string, tenLoai: string) => {
+    const handleEdit = (maLoai: string, tenLoai: string, moTa?: string) => {
         setEditingId(maLoai);
         setEditingTen(tenLoai);
+        setEditingMoTa(moTa || '');
     };
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingTen.trim() || !editingId) return;
         try {
-            await loaiSanPhamService.update(editingId, editingTen);
+            await loaiSanPhamService.update(editingId, editingTen, editingMoTa || undefined);
             setEditingId(null);
             setEditingTen('');
+            setEditingMoTa('');
             loadData();
         } catch (error) {
             alert('Sửa thất bại!');
@@ -92,11 +99,12 @@ export default function LoaiSanPhamPage() {
     const handleCancelEdit = () => {
         setEditingId(null);
         setEditingTen('');
+        setEditingMoTa('');
     };
 
     const filteredLoaiSPs = loaiSPs.filter((item) =>
-        (item.MaLoai || '').toLowerCase().includes(searchTen.toLowerCase()) ||
-        (item.TenLoai || '').toLowerCase().includes(searchTen.toLowerCase())
+        (String(item.MaLoai || '').toLowerCase().includes(searchTen.toLowerCase())) ||
+        (String(item.TenLoai || '').toLowerCase().includes(searchTen.toLowerCase()))
     );
 
     return (
@@ -142,6 +150,18 @@ export default function LoaiSanPhamPage() {
                                     autoFocus
                                 />
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Mô Tả
+                                </label>
+                                <textarea
+                                    placeholder="Nhập mô tả loại sản phẩm..."
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:border-brand-500"
+                                    value={newMoTa}
+                                    onChange={(e) => setNewMoTa(e.target.value)}
+                                    rows={3}
+                                />
+                            </div>
                             <div className="flex gap-3 justify-end pt-4">
                                 <button
                                     type="button"
@@ -169,60 +189,73 @@ export default function LoaiSanPhamPage() {
                         <tr>
                             <th className="p-4 font-medium">Mã Loại</th>
                             <th className="p-4 font-medium">Tên Loại Sản Phẩm</th>
+                            <th className="p-4 font-medium">Mô Tả</th>
                             <th className="p-4 font-medium w-32 text-center">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
                         {isLoading ? (
-                            <tr><td colSpan={3} className="p-4 text-center text-gray-500">Đang tải dữ liệu...</td></tr>
+                            <tr><td colSpan={4} className="p-4 text-center text-gray-500">Đang tải dữ liệu...</td></tr>
                         ) : loaiSPs.length === 0 ? (
-                            <tr><td colSpan={3} className="p-4 text-center text-gray-500">Chưa có dữ liệu</td></tr>
+                            <tr><td colSpan={4} className="p-4 text-center text-gray-500">Chưa có dữ liệu</td></tr>
                         ) : filteredLoaiSPs.length === 0 ? (
-                            <tr><td colSpan={3} className="p-4 text-center text-gray-500">Không tìm thấy kết quả</td></tr>
+                            <tr><td colSpan={4} className="p-4 text-center text-gray-500">Không tìm thấy kết quả</td></tr>
                         ) : (
                             filteredLoaiSPs.map((item) => (
-                                editingId === item.MaLoai ? (
-                                    <tr key={item.MaLoai} className="border-b border-gray-100 bg-blue-50">
-                                        <td className="p-4 text-gray-600">{item.MaLoai}</td>
-                                        <td className="p-4">
-                                            <form onSubmit={handleUpdate} className="flex gap-2">
+                                <React.Fragment key={item.MaLoai}>
+                                    {editingId === item.MaLoai ? (
+                                        <tr className="border-b border-gray-100 bg-blue-50">
+                                            <td className="p-4 text-gray-600">{item.MaLoai}</td>
+                                            <td className="p-4">
                                                 <input
                                                     type="text"
                                                     value={editingTen}
                                                     onChange={(e) => setEditingTen(e.target.value)}
-                                                    className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:border-brand-500"
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:border-brand-500"
                                                     autoFocus
                                                 />
-                                                <button type="submit" className="bg-green-500 text-white px-3 py-2 rounded-md hover:bg-green-600 text-sm">
-                                                    Lưu
+                                            </td>
+                                            <td className="p-4">
+                                                <textarea
+                                                    value={editingMoTa}
+                                                    onChange={(e) => setEditingMoTa(e.target.value)}
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:border-brand-500"
+                                                    rows={2}
+                                                />
+                                            </td>
+                                            <td className="p-4">
+                                                <form onSubmit={handleUpdate} className="flex gap-2">
+                                                    <button type="submit" className="bg-green-500 text-white px-3 py-2 rounded-md hover:bg-green-600 text-sm">
+                                                        Lưu
+                                                    </button>
+                                                    <button type="button" onClick={handleCancelEdit} className="bg-gray-400 text-white px-3 py-2 rounded-md hover:bg-gray-500 text-sm">
+                                                        Hủy
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        <tr className="border-b border-gray-100 hover:bg-gray-50">
+                                            <td className="p-4 text-gray-600">{item.MaLoai}</td>
+                                            <td className="p-4 font-medium text-gray-800">{item.TenLoai}</td>
+                                            <td className="p-4 text-gray-700 ">{item.MoTa || '-'}</td>
+                                            <td className="p-4 text-center flex gap-2 justify-center">
+                                                <button
+                                                    onClick={() => handleEdit(String(item.MaLoai || ''), String(item.TenLoai || ''), item.MoTa)}
+                                                    className="text-blue-500 hover:text-blue-700 font-medium text-sm"
+                                                >
+                                                    Sửa
                                                 </button>
-                                                <button type="button" onClick={handleCancelEdit} className="bg-gray-400 text-white px-3 py-2 rounded-md hover:bg-gray-500 text-sm">
-                                                    Hủy
+                                                <button
+                                                    onClick={() => handleDelete(String(item.MaLoai || ''))}
+                                                    className="text-red-500 hover:text-red-700 font-medium text-sm"
+                                                >
+                                                    Xóa
                                                 </button>
-                                            </form>
-                                        </td>
-                                        <td className="p-4"></td>
-                                    </tr>
-                                ) : (
-                                    <tr key={item.MaLoai} className="border-b border-gray-100 hover:bg-gray-50">
-                                        <td className="p-4 text-gray-600">{item.MaLoai}</td>
-                                        <td className="p-4 font-medium text-gray-800">{item.TenLoai}</td>
-                                        <td className="p-4 text-center flex gap-2 justify-center">
-                                            <button
-                                                onClick={() => handleEdit(item.MaLoai || '', item.TenLoai || '')}
-                                                className="text-blue-500 hover:text-blue-700 font-medium text-sm"
-                                            >
-                                                Sửa
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(item.MaLoai || '')}
-                                                className="text-red-500 hover:text-red-700 font-medium text-sm"
-                                            >
-                                                Xóa
-                                            </button>
-                                        </td>
-                                    </tr>
-                                )
+                                            </td>
+                                        </tr>
+                                    )}
+                                </React.Fragment>
                             ))
                         )}
                     </tbody>

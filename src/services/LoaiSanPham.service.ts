@@ -8,7 +8,7 @@ export const loaiSanPhamService = {
         if (!res.ok) throw new Error(json.error || 'Fetch failed');
         return json.data;
     },
-    async create(payload: { MaLoai: string; TenLoai: string }) {
+    async create(payload: { MaLoai: string; TenLoai: string; MoTa?: string }) {
         const res = await fetch(base, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -18,11 +18,11 @@ export const loaiSanPhamService = {
         if (!res.ok) throw new Error(json.error || 'Create failed');
         return json;
     },
-    async update(MaLoai: string, TenLoai: string) {
+    async update(MaLoai: string, TenLoai: string, MoTa?: string) {
         const res = await fetch(base, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ MaLoai: MaLoai, TenLoai: TenLoai }),
+            body: JSON.stringify({ MaLoai: MaLoai, TenLoai: TenLoai, MoTa: MoTa }),
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || 'Update failed');

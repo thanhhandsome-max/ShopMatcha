@@ -1,17 +1,19 @@
 // src/components/SanPhamForm.tsx
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ISanPham } from '@/types';
 import { LoaiSanPhamSelect } from '@/components/LoaiSanPham/LoaiSanPhamSelect';
+import { SanPhamImageManager } from '@/components/sanpham/SanPhamImageManager';
 
 interface Props {
     initialData?: Partial<ISanPham>;
-    onSubmit: (data: Partial<ISanPham>) => Promise<void>;
+    onSubmit: (data: Partial<ISanPham>) => Promise<{ MaSP?: string } | void>;
     isLoading?: boolean;
     onCancel?: () => void;
+    onImagesChanged?: () => void;
 }
 
-export const SanPhamForm: React.FC<Props> = ({ initialData, onSubmit, isLoading, onCancel }) => {
+export const SanPhamForm: React.FC<Props> = ({ initialData, onSubmit, isLoading, onCancel, onImagesChanged }) => {
     const [formData, setFormData] = useState<Partial<ISanPham>>({
         MaSP: initialData?.MaSP || '',
         TenSanPham: initialData?.TenSanPham || '',
@@ -23,6 +25,22 @@ export const SanPhamForm: React.FC<Props> = ({ initialData, onSubmit, isLoading,
         MaLoai: initialData?.MaLoai || '',
         NgayTao: initialData?.NgayTao || new Date().toISOString(),
     });
+    const [savedMaSP, setSavedMaSP] = useState<string>(initialData?.MaSP || '');
+
+    useEffect(() => {
+        setFormData({
+            MaSP: initialData?.MaSP || '',
+            TenSanPham: initialData?.TenSanPham || '',
+            MaCodeSp: initialData?.MaCodeSp || '',
+            GiaVon: initialData?.GiaVon || 0,
+            GiaBan: initialData?.GiaBan || 0,
+            MoTa: initialData?.MoTa || '',
+            TrangThai: initialData?.TrangThai ?? 1,
+            MaLoai: initialData?.MaLoai || '',
+            NgayTao: initialData?.NgayTao || new Date().toISOString(),
+        });
+        setSavedMaSP(initialData?.MaSP || '');
+    }, [initialData]);
 
     const handleChange = (field: keyof ISanPham, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -47,8 +65,14 @@ export const SanPhamForm: React.FC<Props> = ({ initialData, onSubmit, isLoading,
             return;
         }
 
-        await onSubmit(formData);
+        const result = await onSubmit(formData);
+        const nextMaSP = result && typeof result === 'object' && 'MaSP' in result ? String(result.MaSP || '') : '';
+        if (nextMaSP) {
+            setSavedMaSP(nextMaSP);
+        }
     };
+
+    const imageMaSP = initialData?.MaSP || savedMaSP;
 
     return (
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-theme-sm border border-gray-200">
@@ -180,6 +204,17 @@ export const SanPhamForm: React.FC<Props> = ({ initialData, onSubmit, isLoading,
                     {isLoading ? 'Đang lưu...' : 'Lưu Sản Phẩm'}
                 </button>
             </div>
+
+            <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                <strong className="font-semibold">Hướng dẫn:</strong>{' '}
+                Để thêm ảnh cho sản phẩm, hãy lưu sản phẩm trước !
+            </div>
+
+            {imageMaSP && (
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                    <SanPhamImageManager maSP={imageMaSP} onImagesChanged={onImagesChanged} />
+                </div>
+            )}
         </form>
     );
 };
