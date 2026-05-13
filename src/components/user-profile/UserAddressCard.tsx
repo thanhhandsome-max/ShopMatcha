@@ -1,15 +1,44 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
 
+interface ProfileData {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  startDate: string | null;
+  type: string;
+}
+
 export default function UserAddressCard() {
+  const { user } = useAuth();
   const { isOpen, openModal, closeModal } = useModal();
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (user?.MaTK) {
+      setIsLoading(true);
+      fetch(`/api/auth/profile?maTK=${user.MaTK}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.ok && data.data) {
+            setProfileData(data.data);
+          }
+        })
+        .catch((err) => console.error('Failed to fetch profile:', err))
+        .finally(() => setIsLoading(false));
+    }
+  }, [user?.MaTK]);
+
   const handleSave = () => {
-    // Handle save logic here
     console.log("Saving changes...");
     closeModal();
   };
@@ -25,37 +54,37 @@ export default function UserAddressCard() {
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
               <div>
                 <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  Country
+                  Full Name
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  United States
+                  {isLoading ? 'Loading...' : (profileData?.name || 'N/A')}
                 </p>
               </div>
 
               <div>
                 <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  City/State
+                  Email
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  Phoenix, Arizona, United States.
+                  {profileData?.email || 'N/A'}
                 </p>
               </div>
 
               <div>
                 <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  Postal Code
+                  Phone
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  ERT 2489
+                  {profileData?.phone || 'N/A'}
                 </p>
               </div>
 
               <div>
                 <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  TAX ID
+                  Address
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  AS4568384
+                  {profileData?.address || 'N/A'}
                 </p>
               </div>
             </div>

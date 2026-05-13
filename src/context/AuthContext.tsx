@@ -1,3 +1,5 @@
+"use client";
+
 // src/context/AuthContext.tsx
 import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import { STORAGE_KEYS } from '../lib/constants';
@@ -25,8 +27,8 @@ export const AuthContext = createContext<AuthContextType>({
     user: null,
     isAuthenticated: false,
     isLoading: true,
-    login: () => {},
-    logout: () => {},
+    login: () => { },
+    logout: () => { },
 });
 
 // 3. Provider Component - Dùng để bọc bên ngoài toàn bộ App
@@ -63,7 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem(STORAGE_KEYS.USER_INFO);
         setUser(null);
         // Chuyển hướng về trang chủ hoặc trang đăng nhập
-        window.location.href = '/login'; 
+        window.location.href = '/signin';
     };
 
     return (

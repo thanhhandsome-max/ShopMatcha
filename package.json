@@ -23,6 +23,7 @@
     "apexcharts": "^4.7.0",
     "autoprefixer": "^10.4.22",
     "axios": "^1.15.2",
+    "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "flatpickr": "^4.6.13",
     "jose": "^6.2.3",

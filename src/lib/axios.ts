@@ -57,7 +57,7 @@ axiosInstance.interceptors.response.use(
                         // Đá văng về trang đăng nhập 
                         // (Lưu ý: Nếu dùng Next.js App Router, bạn có thể phải xử lý redirect khác một chút, 
                         // nhưng dùng window.location.href là cách "cục súc" và luôn hiệu quả)
-                        window.location.href = '/login';
+                        window.location.href = '/signin';
                     }
                     break;
 

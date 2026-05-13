@@ -4,12 +4,68 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { FormEvent, useMemo, useState } from "react";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const { login } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const redirectTo = useMemo(() => {
+    const from = searchParams.get("from");
+    if (!from || !from.startsWith("/")) {
+      return "/";
+    }
+    return from;
+  }, [searchParams]);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const formData = new FormData(event.currentTarget);
+      const identifier = String(formData.get("identifier") || "").trim();
+      const password = String(formData.get("password") || "");
+      const rememberMe = formData.get("rememberMe") === "on";
+
+      if (!identifier || !password) {
+        throw new Error("Vui lòng nhập tên đăng nhập và mật khẩu.");
+      }
+
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ identifier, password, rememberMe }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result?.ok) {
+        throw new Error(result?.error || "Đăng nhập thất bại. Vui lòng thử lại.");
+      }
+
+      login(result.token, result.user);
+      router.replace(redirectTo);
+      router.refresh();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Đăng nhập thất bại.";
+      setErrorMessage(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col flex-1 lg:w-1/2 w-full">
       <div className="w-full max-w-md sm:pt-10 mx-auto mb-5">
@@ -84,13 +140,23 @@ export default function SignInForm() {
                 </span>
               </div>
             </div>
-            <form>
+            <form onSubmit={handleSubmit}>
               <div className="space-y-6">
+                {errorMessage && (
+                  <div className="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-900/40 dark:bg-error-950/40 dark:text-error-300">
+                    {errorMessage}
+                  </div>
+                )}
                 <div>
                   <Label>
-                    Email <span className="text-error-500">*</span>{" "}
+                    Tên đăng nhập <span className="text-error-500">*</span>{" "}
                   </Label>
-                  <Input placeholder="info@gmail.com" type="email" />
+                  <Input
+                    name="identifier"
+                    placeholder="Nhập tên đăng nhập hoặc email"
+                    type="text"
+                    disabled={isSubmitting}
+                  />
                 </div>
                 <div>
                   <Label>
@@ -98,8 +164,10 @@ export default function SignInForm() {
                   </Label>
                   <div className="relative">
                     <Input
+                      name="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
+                      disabled={isSubmitting}
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
@@ -115,7 +183,16 @@ export default function SignInForm() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Checkbox checked={isChecked} onChange={setIsChecked} />
+                    <Checkbox
+                      checked={isChecked}
+                      onChange={setIsChecked}
+                      id="rememberMe"
+                    />
+                    <input
+                      type="hidden"
+                      name="rememberMe"
+                      value={isChecked ? "on" : "off"}
+                    />
                     <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">
                       Keep me logged in
                     </span>
@@ -128,8 +205,8 @@ export default function SignInForm() {
                   </Link>
                 </div>
                 <div>
-                  <Button className="w-full" size="sm">
-                    Sign in
+                  <Button className="w-full" size="sm" disabled={isSubmitting}>
+                    {isSubmitting ? "Signing in..." : "Sign in"}
                   </Button>
                 </div>
               </div>
