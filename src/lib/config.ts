@@ -59,3 +59,15 @@ export const config = {
     return getAPIBaseURL();
   },
 };
+
+// Default mapping from UI payment keys to backend `payment_method` values.
+export const PAYMENT_METHOD_MAP: Record<string, string> = {
+  card: 'CreditCard',
+  vnpay: 'VNPay',
+  paypal: 'COD',
+  bank: 'COD'
+};
+
+export function getPaymentMethodValue(key: string): string {
+  return PAYMENT_METHOD_MAP[key] || 'COD';
+}

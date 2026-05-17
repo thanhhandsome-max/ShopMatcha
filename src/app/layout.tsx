@@ -7,6 +7,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { loadRuntimeConfig } from '@/lib/config';
 import { AuthProvider } from '@/contexts/AuthContext';
+import GlobalParallax from '@/components/ui/GlobalParallax';
 
 const queryClient = new QueryClient();
 
@@ -52,8 +53,9 @@ export default function RootLayout({
         <AuthProvider>
           <QueryClientProvider client={queryClient}>
             <TooltipProvider>
+              <GlobalParallax />
               <Toaster />
-              {children}
+              <div className="relative z-10">{children}</div>
             </TooltipProvider>
           </QueryClientProvider>
         </AuthProvider>

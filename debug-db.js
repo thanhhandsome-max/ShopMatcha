@@ -1,8 +1,15 @@
+const path = require('path');
+const dotenv = require('dotenv');
+
+dotenv.config({ path: path.resolve(__dirname, '.env'), override: true });
+dotenv.config({ path: path.resolve(__dirname, '.env.local'), override: true });
+
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 (async () => {
   try {
+    console.log('DATABASE_URL:', process.env.DATABASE_URL);
     console.log('=== ACCOUNTS ===');
     const accts = await prisma.taikhoan.findMany({
       select: { MaTaiKhoan: true, TenDangNhap: true },

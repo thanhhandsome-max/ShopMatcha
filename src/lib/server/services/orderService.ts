@@ -34,11 +34,16 @@ async function generateMaDH(): Promise<string> {
   const lastOrder = await prisma.donhang.findFirst({
     orderBy: { MaDH: 'desc' }
   });
-  
-  if (!lastOrder) return 'DH001';
-  
-  const lastNumber = parseInt(lastOrder.MaDH.replace('DH', ''));
-  return `DH${String(lastNumber + 1).padStart(3, '0')}`;
+
+  if (!lastOrder || !lastOrder.MaDH) return 'DH001';
+
+  // Accept existing prefixes like 'DH' or 'HD' and extract the numeric suffix
+  const match = lastOrder.MaDH.match(/(\D*)(\d+)$/);
+  if (!match) return 'DH001';
+
+  const prefix = match[1] || 'DH';
+  const num = parseInt(match[2], 10);
+  return `${prefix}${String(num + 1).padStart(match[2].length, '0')}`;
 }
 
 /**
@@ -89,24 +94,43 @@ async function resolveStoreId(requestedMaCH?: string): Promise<string> {
   return fallbackStore.MaCH;
 }
 
+function buildVisibleOrdersWhere(maKH: string) {
+  return {
+    MaKH: maKH,
+    order_type: { not: 2 }
+  };
+}
+
 /**
  * Create order from cart items
  */
 export async function createOrder(data: CreateOrderRequest): Promise<CreateOrderResponse> {
   try {
+    console.log('🛒 [OrderService] createOrder called with:', JSON.stringify(data, null, 2));
+    
     const storeId = await resolveStoreId(data.MaCH);
+    console.log('✅ [OrderService] Store resolved to:', storeId);
+    const isVNPay = String(data.payment_method || '').toLowerCase() === 'vnpay';
+    const initialOrderStatus = isVNPay ? 0 : 1;
+    const initialOrderType = isVNPay ? 2 : 1;
 
     // Validate items exist and have enough stock
     for (const item of data.items) {
+      console.log(`🔍 [OrderService] Validating item MaSP:${item.MaSP}, quantity:${item.quantity}`);
+      
       const product = await prisma.sanpham.findUnique({
         where: { MaSP: item.MaSP }
       });
       
       if (!product) {
+        console.error(`❌ [OrderService] Product not found: ${item.MaSP}`);
         return { success: false, message: `Sản phẩm ${item.MaSP} không tồn tại` };
       }
       
+      console.log(`📦 [OrderService] Product found: ${product.TenSP}, TrangThai: ${product.TrangThai}`);
+      
       if (Number(product.TrangThai) !== 1) {
+        console.error(`❌ [OrderService] Product inactive: ${product.TenSP}`);
         return { success: false, message: `Sản phẩm ${product.TenSP} đã ngừng kinh doanh` };
       }
       
@@ -117,7 +141,10 @@ export async function createOrder(data: CreateOrderRequest): Promise<CreateOrder
       });
 
       const currentStock = stock._sum.SoLuong || 0;
+      console.log(`📊 [OrderService] Current stock for ${item.MaSP}: ${currentStock}`);
+      
       if (currentStock < item.quantity) {
+        console.error(`❌ [OrderService] Insufficient stock: need ${item.quantity}, have ${currentStock}`);
         return { 
           success: false, 
           message: `Sản phẩm ${product.TenSP} không đủ số lượng trong kho (còn ${currentStock})` 
@@ -125,9 +152,12 @@ export async function createOrder(data: CreateOrderRequest): Promise<CreateOrder
       }
     }
     
+    console.log('✅ [OrderService] All items validated');
+    
     // Generate IDs
     const maDH = await generateMaDH();
     const orderCode = generateOrderCode();
+    console.log(`📋 [OrderService] Generated MaDH:${maDH}, OrderCode:${orderCode}`);
     
     // Calculate totals
     const subtotal = data.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -135,7 +165,11 @@ export async function createOrder(data: CreateOrderRequest): Promise<CreateOrder
     let discountAmount = 0;
     let promotionText = '';
 
+    console.log(`💰 [OrderService] Subtotal: ${subtotal}, ShippingFee: ${shippingFee}`);
+
     if (data.promotionId && data.MaKH) {
+      console.log(`🎁 [OrderService] Checking promotion: ${data.promotionId} for customer: ${data.MaKH}`);
+      
       const promotion = await prisma.khuyenmaikhachhang.findFirst({
         where: {
           MaKH: data.MaKH,
@@ -147,24 +181,29 @@ export async function createOrder(data: CreateOrderRequest): Promise<CreateOrder
       });
 
       if (!promotion) {
+        console.warn('⚠️ [OrderService] Promotion not found or expired');
         return { success: false, message: 'Mã khuyến mãi không hợp lệ hoặc đã hết hạn' };
       }
 
       discountAmount = Number(promotion.giatri || 0);
       promotionText = `Khuyến mãi ${promotion.Makmkh} giảm ${discountAmount}`;
+      console.log(`✅ [OrderService] Promotion applied: -${discountAmount}`);
     }
 
     const tongTien = Math.max(subtotal + shippingFee - discountAmount, 0);
+    console.log(`📝 [OrderService] Total amount: ${tongTien}`);
     
     // Use transaction to create order and order items
+    console.log('🔄 [OrderService] Starting transaction to create order');
+    
     const result = await prisma.$transaction(async (tx) => {
       // Create donhang
+      console.log('📝 [OrderService] Creating donhang record...');
       const order = await tx.donhang.create({
         data: {
           MaDH: maDH,
           MaCH: storeId,
           MaKH: data.MaKH,
-          MaTaiKhoan: data.MaTaiKhoan,
           order_code: orderCode,
           TongTien: tongTien,
           subtotal: subtotal,
@@ -172,25 +211,39 @@ export async function createOrder(data: CreateOrderRequest): Promise<CreateOrder
           payment_method: data.payment_method,
           address_id: data.address_id,
           customer_note: [data.customer_note, promotionText].filter(Boolean).join(' | '),
-          TrangThai: 1, // Pending
+          TrangThai: initialOrderStatus,
+          order_type: initialOrderType,
           payment_status: 0 // Unpaid
         }
       });
       
+      console.log(`✅ [OrderService] Order created: ${order.MaDH}`);
+      
       // Create chitietdonhang for each item
+      console.log(`📝 [OrderService] Creating ${data.items.length} order items...`);
       for (const item of data.items) {
         const itemTotal = item.price * item.quantity;
+        console.log(`  - MaSP:${item.MaSP}, Qty:${item.quantity}, Price:${item.price}, Total:${itemTotal}`);
+        console.log('  - Item create payload:', JSON.stringify({
+          MaSP: item.MaSP,
+          MaDH: maDH,
+          SoLuong: item.quantity,
+          DonGia: item.price,
+          TongTien: itemTotal
+        }));
         
         await tx.chitietdonhang.create({
           data: {
             MaSP: item.MaSP,
             MaDH: maDH,
             SoLuong: item.quantity,
+            DonGia: item.price,
             TongTien: itemTotal
           }
         });
         
         // Decrease stock in tonkho
+        console.log(`  - Decreasing stock for ${item.MaSP} by ${item.quantity}`);
         await tx.tonkho.updateMany({
           where: { MaSP: item.MaSP },
           data: {
@@ -216,7 +269,11 @@ export async function createOrder(data: CreateOrderRequest): Promise<CreateOrder
     };
     
   } catch (error) {
-    console.error('Create order error:', error);
+    console.error('❌ [OrderService] Create order error:', error);
+    if (error instanceof Error) {
+      console.error('📍 Error message:', error.message);
+      console.error('📍 Error stack:', error.stack);
+    }
     return { success: false, message: 'Lỗi hệ thống khi tạo đơn hàng' };
   }
 }
@@ -238,8 +295,7 @@ export async function getOrderById(maDH: string, maKH?: string): Promise<any> {
             }
           }
         },
-        khachhang: true,
-        taikhoan: true
+        khachhang: true
       }
     });
     
@@ -265,10 +321,11 @@ export async function getOrderById(maDH: string, maKH?: string): Promise<any> {
 export async function getOrdersByCustomer(maKH: string, page = 1, limit = 10): Promise<any> {
   try {
     const skip = (page - 1) * limit;
+    const visibleOrdersWhere = buildVisibleOrdersWhere(maKH);
     
     const [orders, total] = await Promise.all([
       prisma.donhang.findMany({
-        where: { MaKH: maKH },
+        where: visibleOrdersWhere,
         include: {
           chitietdonhang: {
             include: {
@@ -285,7 +342,7 @@ export async function getOrdersByCustomer(maKH: string, page = 1, limit = 10): P
         take: limit
       }),
       prisma.donhang.count({
-        where: { MaKH: maKH }
+        where: visibleOrdersWhere
       })
     ]);
     

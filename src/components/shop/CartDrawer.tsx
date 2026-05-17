@@ -1,6 +1,6 @@
 'use client';
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { useCart, formatMoneyVND } from "@/store/useCart";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -11,11 +11,32 @@ interface CartDrawerProps {
 }
 
 export default function CartDrawer({ onClose }: CartDrawerProps) {
-  const items      = useCart((s) => s.items);
+  const router = useRouter();
+  const items = useCart((s) => s.items);
+  const selectedItemIds = useCart((s) => s.selectedItemIds);
   const removeItem = useCart((s) => s.removeItem);
   const updateQuantity = useCart((s) => s.updateQuantity);
-  const clear      = useCart((s) => s.clear);
-  const totalPrice = useCart((s) => s.totalPrice);
+  const clear = useCart((s) => s.clear);
+  const selectAllItems = useCart((s) => s.selectAllItems);
+  const clearSelection = useCart((s) => s.clearSelection);
+  const toggleItemSelection = useCart((s) => s.toggleItemSelection);
+  const selectedTotalPrice = useCart((s) => s.selectedTotalPrice());
+
+  const selectedCount = selectedItemIds.length;
+  const selectedTotal = selectedTotalPrice;
+  const isCheckoutDisabled = selectedCount === 0;
+
+  // Lấy dữ liệu cart dưới dạng JSON với ảnh
+  const cartJson = items.map(item => ({
+    productId: item.productId,
+    name: item.name,
+    price: item.price,
+    quantity: item.quantity,
+    image: item.image,
+    total: item.price * item.quantity
+  }));
+
+  console.log('Cart JSON:', cartJson);
 
   if (items.length === 0) {
     return (
@@ -44,17 +65,43 @@ export default function CartDrawer({ onClose }: CartDrawerProps) {
 
       {/* Header */}
       <SheetHeader className="px-6 py-4 border-b border-gray-100 bg-white">
-        <SheetTitle className="text-sm tracking-[0.15em] font-semibold uppercase text-gray-900">
-          Giỏ hàng ({items.length})
-        </SheetTitle>
+        <div className="flex items-center justify-between gap-4">
+          <SheetTitle className="text-sm tracking-[0.15em] font-semibold uppercase text-gray-900">
+            Giỏ hàng ({items.length})
+          </SheetTitle>
+          <button
+            type="button"
+            onClick={() => {
+              if (selectedCount === items.length) {
+                clearSelection();
+              } else {
+                selectAllItems();
+              }
+            }}
+            className="text-xs uppercase tracking-[0.15em] font-medium text-[#2D5016] hover:text-[#1f3a0f] transition-colors"
+          >
+            {selectedCount === items.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+          </button>
+        </div>
       </SheetHeader>
 
       {/* Items list */}
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-white">
         {items.map((item) => (
-          <div key={item.productId} className="flex gap-4 pb-4 border-b border-gray-100 last:border-0">
-            {/* Ảnh sản phẩm */}
-            <div className="w-20 h-20 flex-shrink-0 bg-gray-50 overflow-hidden">
+          <div
+            key={item.productId}
+            className="flex gap-4 pb-4 border-b border-gray-100 last:border-0 rounded-3xl transform transition-all duration-200 hover:shadow-[0_12px_32px_rgba(45,80,22,0.08)] hover:scale-[1.01]"
+          >
+            <div className="flex items-start pt-2">
+              <input
+                type="checkbox"
+                checked={selectedItemIds.includes(item.productId)}
+                onChange={() => toggleItemSelection(item.productId)}
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-[#2D5016] focus:ring-[#2D5016]"
+                aria-label={`Chọn sản phẩm ${item.name}`}
+              />
+            </div>
+            <div className="w-20 h-20 flex-shrink-0 bg-gray-50 overflow-hidden rounded-2xl">
               {item.image ? (
                 <img
                   src={item.image}
@@ -135,19 +182,27 @@ export default function CartDrawer({ onClose }: CartDrawerProps) {
             Tổng cộng
           </span>
           <span className="text-lg font-semibold text-gray-900">
-            {formatMoneyVND(totalPrice())}
+            {formatMoneyVND(selectedTotal)}
           </span>
         </div>
         <p className="text-xs text-gray-500">
-          Phí vận chuyển được tính khi thanh toán
+          Chỉ sản phẩm đã chọn mới được thanh toán.
         </p>
-        <Link
-          href="/checkout"
-          onClick={onClose}
-          className="block w-full bg-[#2D5016] text-white text-center py-3.5 text-xs tracking-[0.15em] font-medium hover:bg-[#3a6b1e] transition-colors"
+        <button
+          type="button"
+          onClick={() => {
+            if (isCheckoutDisabled) {
+              toast.error("Vui lòng chọn ít nhất một sản phẩm để thanh toán");
+              return;
+            }
+            onClose();
+            router.push('/checkout');
+          }}
+          disabled={isCheckoutDisabled}
+          className={`block w-full py-3.5 text-xs tracking-[0.15em] font-medium text-white rounded-lg transition-all ${isCheckoutDisabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#2D5016] hover:bg-[#3a6b1e]'}`}
         >
-          THANH TOÁN
-        </Link>
+          {isCheckoutDisabled ? 'Chọn sản phẩm để thanh toán' : `THANH TOÁN (${selectedCount})`}
+        </button>
         <button
           onClick={onClose}
           className="block w-full border border-gray-300 text-center py-3 text-xs tracking-[0.15em] font-medium text-gray-700 hover:bg-gray-50 transition-colors"

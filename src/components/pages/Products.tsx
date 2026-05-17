@@ -12,6 +12,7 @@ import {
 import { SlidersHorizontal } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, Suspense } from "react";
+import { motion } from "framer-motion";
 
 const categories = [
   { value: "all", label: "Tất cả" },
@@ -99,21 +100,41 @@ function ProductsContent() {
     <div className="min-h-screen bg-[#FAFAF5]">
       <Header />
 
-      <div className="bg-white border-b border-gray-100">
+      <motion.div 
+        className="bg-white border-b border-gray-100"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-          <h1 className="text-3xl md:text-4xl font-serif text-[#2D5016] tracking-wide mb-2">
+          <motion.h1 
+            className="text-3xl md:text-4xl font-serif text-[#2D5016] tracking-wide mb-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
             {searchQuery ? `Kết quả tìm kiếm: "${searchQuery}"` : "Sản phẩm"}
-          </h1>
-          <p className="text-gray-500 text-sm tracking-wide">
+          </motion.h1>
+          <motion.p 
+            className="text-gray-500 text-sm tracking-wide"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
             {searchQuery 
               ? `Tìm thấy ${filteredProducts.length} sản phẩm phù hợp`
               : "Matcha ceremonial & trà xanh cao cấp từ Kyoto, Nhật Bản"
             }
-          </p>
+          </motion.p>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <motion.div 
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
             <button
@@ -173,20 +194,42 @@ function ProductsContent() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-              {currentProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+            <motion.div 
+              className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+            >
+              {currentProducts.map((product, index) => (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: index * 0.05 }}
+                >
+                  <ProductCard product={product} />
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
 
             {filteredProducts.length === 0 && (
-              <div className="text-center py-20">
+              <motion.div 
+                className="text-center py-20"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+              >
                 <p className="text-gray-500 text-sm">Không tìm thấy sản phẩm nào.</p>
-              </div>
+              </motion.div>
             )}
 
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2 mt-12">
+              <motion.div 
+                className="flex justify-center items-center gap-2 mt-12"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
                 <button
                   onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
@@ -216,11 +259,11 @@ function ProductsContent() {
                 >
                   SAU
                 </button>
-              </div>
+              </motion.div>
             )}
           </>
         )}
-      </div>
+      </motion.div>
 
       <Footer />
     </div>

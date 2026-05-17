@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 interface ProductCardProps {
   product: {
@@ -51,14 +52,23 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <div
+    <motion.div
       className="group relative"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      viewport={{ once: true }}
+      whileHover={{ y: -8 }}
     >
       <Link href={`/products/${product.id}`} className="block">
         {/* Image */}
-        <div className="relative aspect-square overflow-hidden bg-gray-50">
+        <motion.div 
+          className="relative aspect-square overflow-hidden bg-gray-50"
+          whileHover={{ scale: 1.02 }}
+          transition={{ duration: 0.3 }}
+        >
           <picture>
             <img
               src={isHovered && product.imageHover ? product.imageHover : product.image}
@@ -93,15 +103,38 @@ export default function ProductCard({ product }: ProductCardProps) {
               THÊM VÀO GIỎ
             </span>
           </div>
-        </div>
+        </motion.div>
 
         {/* Info */}
-        <div className="mt-4 space-y-1.5">
-          <p className="text-[10px] text-gray-400 tracking-wider uppercase">HTDCHA</p>
-          <h3 className="text-sm font-medium text-gray-900 leading-snug line-clamp-2 group-hover:text-[#2D5016] transition-colors">
+        <motion.div 
+          className="mt-4 space-y-1.5"
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          viewport={{ once: true }}
+        >
+          <motion.p 
+            className="text-[10px] text-gray-400 tracking-wider uppercase"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.15 }}
+            viewport={{ once: true }}
+          >
+            HTDCHA
+          </motion.p>
+          <motion.h3 
+            className="text-sm font-medium text-gray-900 leading-snug line-clamp-2 group-hover:text-[#2D5016] transition-colors"
+            whileHover={{ color: "#2D5016" }}
+          >
             {product.name}
-          </h3>
-          <div className="flex items-center gap-2">
+          </motion.h3>
+          <motion.div 
+            className="flex items-center gap-2"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+            viewport={{ once: true }}
+          >
             <span className="text-sm font-medium text-gray-900">
               {formatMoneyVND(product.price)}
             </span>
@@ -113,9 +146,9 @@ export default function ProductCard({ product }: ProductCardProps) {
                 </span>
               </>
             )}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </Link>
-    </div>
+    </motion.div>
   );
 }

@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 // ── Hàm kiểm tra tồn kho — gọi thẳng API backend ──
 async function checkProductStock(productId: string): Promise<{ inStock: boolean; totalStock: number }> {
@@ -90,7 +91,6 @@ export default function ProductDetail() {
 
   // ── Thêm vào giỏ ──
   const handleAddToCart = async () => {
-    checkProductStock,
     if (!product) return;
     if (!isLoggedIn) {
       toast.error("Vui lòng đăng nhập để mua sắm");
@@ -98,6 +98,27 @@ export default function ProductDetail() {
       return;
     }
     setStockError(null);
+
+    // Check stock
+    const stockCheck = await checkProductStock(product.id);
+    if (!stockCheck.inStock) {
+      setStockError("Sản phẩm hiện hết hàng");
+      return;
+    }
+
+    // Add to cart
+    const result = await addItem({
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image
+    });
+
+    if (result.success) {
+      toast.success(result.message || "Đã thêm vào giỏ hàng");
+    } else {
+      toast.error(result.message || "Không thể thêm vào giỏ hàng");
+    }
   };
 
   // ── Loading state ──
@@ -146,7 +167,12 @@ export default function ProductDetail() {
       <Header />
 
       {/* Breadcrumb */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <motion.div 
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <nav className="flex items-center gap-1 text-xs text-gray-500">
           <Link href="/" className="hover:text-[#2D5016] transition-colors">Home</Link>
           <ChevronRight size={12} />
@@ -154,14 +180,29 @@ export default function ProductDetail() {
           <ChevronRight size={12} />
           <span className="text-gray-900 truncate max-w-[200px]">{product.name}</span>
         </nav>
-      </div>
+      </motion.div>
 
       {/* Product Detail */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
+      <motion.div 
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.1 }}
+      >
+        <motion.div 
+          className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
 
           {/* ── Ảnh + 360 ── */}
-          <div className="space-y-4">
+          <motion.div 
+            className="space-y-4"
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
             <Product360Card
               frontImage={product.image}
               backImage={product.imageHover}
@@ -181,17 +222,39 @@ export default function ProductDetail() {
                 </button>
               ))}
             </div>
-          </div>
+          </motion.div>
 
           {/* ── Info ── */}
-          <div className="lg:py-4">
-            <p className="text-[10px] text-gray-400 tracking-[0.2em] uppercase mb-2">HTDCHA</p>
-            <h1 className="text-2xl md:text-3xl font-serif text-gray-900 mb-4 leading-snug">
+          <motion.div 
+            className="lg:py-4"
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <motion.p 
+              className="text-[10px] text-gray-400 tracking-[0.2em] uppercase mb-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+            >
+              HTDCHA
+            </motion.p>
+            <motion.h1 
+              className="text-2xl md:text-3xl font-serif text-gray-900 mb-4 leading-snug"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.55 }}
+            >
               {product.name}
-            </h1>
+            </motion.h1>
 
             {/* Giá */}
-            <div className="flex items-center gap-3 mb-6">
+            <motion.div 
+              className="flex items-center gap-3 mb-6"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+            >
               <span className="text-2xl font-medium text-gray-900">
                 {formatMoneyVND(product.price)}
               </span>
@@ -203,32 +266,39 @@ export default function ProductDetail() {
                   </span>
                 </>
               )}
-            </div>
+            </motion.div>
 
-            <p className="text-gray-600 text-sm leading-relaxed mb-8">
+            <motion.p 
+              className="text-gray-600 text-sm leading-relaxed mb-8"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.65 }}
+            >
               {product.longDescription}
-            </p>
+            </motion.p>
 
             {/* Chi tiết sản phẩm */}
-            <div className="space-y-3 mb-8 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500 w-24">Xuất xứ:</span>
-                <span className="text-gray-900">{product.origin}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500 w-24">Trọng lượng:</span>
-                <span className="text-gray-900">{product.weight}</span>
-              </div>
+            <motion.div 
+              className="space-y-3 mb-8 text-sm"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.7 }}
+            >
               <div className="flex items-center gap-2">
                 <span className="text-gray-500 w-24">Tình trạng:</span>
                 <span className={outOfStock ? 'text-red-500' : 'text-green-600'}>
                   {stockLabel}
                 </span>
               </div>
-            </div>
+            </motion.div>
 
             {/* Số lượng + Add to cart */}
-            <div className="flex items-center gap-4 mb-4">
+            <motion.div 
+              className="flex items-center gap-4 mb-4"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.75 }}
+            >
               <div className="flex items-center border border-gray-300">
                 <button
                   onClick={() => setQuantity(q => Math.max(1, q - 1))}
@@ -252,9 +322,11 @@ export default function ProductDetail() {
                 </button>
               </div>
 
-              <button
+              <motion.button
                 onClick={handleAddToCart}
                 disabled={outOfStock}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-xs tracking-[0.15em] font-semibold transition-all ${
                   added
                     ? 'bg-green-600 text-white'
@@ -265,49 +337,94 @@ export default function ProductDetail() {
               >
                 <ShoppingBag size={14} />
                 {added ? 'ĐÃ THÊM VÀO GIỎ ✓' : 'THÊM VÀO GIỎ HÀNG'}
-              </button>
-            </div>
+              </motion.button>
+            </motion.div>
 
             {/* Stock error */}
-            {stockError && (
-              <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-md flex items-center gap-2">
-                <AlertCircle size={16} className="text-red-600 flex-shrink-0" />
-                <p className="text-sm text-red-600">{stockError}</p>
-              </div>
-            )}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: stockError ? 1 : 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {stockError && (
+                <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-md flex items-center gap-2">
+                  <AlertCircle size={16} className="text-red-600 flex-shrink-0" />
+                  <p className="text-sm text-red-600">{stockError}</p>
+                </div>
+              )}
+            </motion.div>
 
             {/* Trust badges */}
-            <div className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-200">
-              <div className="text-center">
+            <motion.div 
+              className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-200"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.8 }}
+            >
+              <motion.div 
+                className="text-center"
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.2 }}
+              >
                 <Truck size={18} className="mx-auto mb-2 text-[#2D5016]" />
                 <p className="text-[10px] text-gray-500 tracking-wider uppercase">Miễn phí ship</p>
-              </div>
-              <div className="text-center">
+              </motion.div>
+              <motion.div 
+                className="text-center"
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.2 }}
+              >
                 <Shield size={18} className="mx-auto mb-2 text-[#2D5016]" />
                 <p className="text-[10px] text-gray-500 tracking-wider uppercase">Chính hãng 100%</p>
-              </div>
-              <div className="text-center">
+              </motion.div>
+              <motion.div 
+                className="text-center"
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.2 }}
+              >
                 <RotateCcw size={18} className="mx-auto mb-2 text-[#2D5016]" />
                 <p className="text-[10px] text-gray-500 tracking-wider uppercase">Đổi trả 7 ngày</p>
-              </div>
-            </div>
-          </div>
-        </div>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        </motion.div>
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
-          <div className="mt-20">
-            <h2 className="text-xl font-serif text-[#2D5016] text-center mb-8">
+          <motion.div 
+            className="mt-20"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.85 }}
+          >
+            <motion.h2 
+              className="text-xl font-serif text-[#2D5016] text-center mb-8"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.9 }}
+            >
               Sản phẩm liên quan
-            </h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-              {relatedProducts.map((p) => (
-                <ProductCard key={p.id} product={p} />
+            </motion.h2>
+            <motion.div 
+              className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.95 }}
+            >
+              {relatedProducts.map((p, index) => (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.95 + index * 0.05 }}
+                >
+                  <ProductCard product={p} />
+                </motion.div>
               ))}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
 
       <Footer />
     </div>

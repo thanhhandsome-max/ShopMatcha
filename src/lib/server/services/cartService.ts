@@ -51,7 +51,7 @@ export async function getCartForAccount(maTaiKhoan: string): Promise<CartRespons
   if (!maKH) return null;
 
   // Get all cart items for this customer from CartItems table
-  const cartItems = await prisma.CartItems.findMany({
+  const cartItems = await prisma.cartItems.findMany({
     where: { MaKH: maKH },
     orderBy: { createdAt: 'asc' }
   });
@@ -108,11 +108,24 @@ export async function addOrUpdateCartItem(
     // Check product exists and is active
     const product = await prisma.sanpham.findUnique({
       where: { MaSP: maSP },
-      select: { MaSP: true, TenSP: true, GiaBan: true, TrangThai: true }
+      select: { 
+        MaSP: true, 
+        TenSP: true, 
+        GiaBan: true, 
+        TrangThai: true,
+        sanpham_anh: {
+          where: { AnhChinh: 1 },
+          select: { DuongDanAnh: true },
+          take: 1
+        }
+      }
     });
     if (!product || Number(product.TrangThai) !== 1) {
       return { ok: false, message: 'Sản phẩm không tồn tại hoặc ngừng kinh doanh', code: 'BAD_PRODUCT' };
     }
+
+    // Get product image
+    const productImage = product.sanpham_anh?.[0]?.DuongDanAnh || '';
 
     // Check available stock
     const stockRow = await prisma.tonkho.findFirst({
@@ -121,7 +134,7 @@ export async function addOrUpdateCartItem(
     const available = stockRow?.SoLuong ?? 0;
 
     // Check existing quantity in cart
-    const existing = await prisma.CartItems.findFirst({
+    const existing = await prisma.cartItems.findFirst({
       where: { MaKH: maKH, MaSp: maSP }
     });
     const currentQty = existing?.quantity ?? 0;
@@ -144,19 +157,19 @@ export async function addOrUpdateCartItem(
 
     // Upsert cart item
     if (existing) {
-      await prisma.CartItems.update({
+      await prisma.cartItems.update({
         where: { Cartid: existing.Cartid },
         data: { quantity: newQty, updatedAt: new Date() }
       });
     } else {
-      await prisma.CartItems.create({
+      await prisma.cartItems.create({
         data: {
           MaKH: maKH,
           MaCH: DEFAULT_STORE,
           MaSp: maSP,
           name: product.TenSP,
           price: product.GiaBan || 0,
-          image: '',
+          image: productImage,
           quantity: newQty,
           createdAt: new Date(),
           updatedAt: new Date()
@@ -190,14 +203,14 @@ export async function setCartLineQuantity(
   }
 
   try {
-    const existing = await prisma.CartItems.findFirst({
+    const existing = await prisma.cartItems.findFirst({
       where: { MaKH: maKH, MaSp: maSP }
     });
 
     if (soLuong === 0) {
       // Delete the cart item
       if (existing) {
-        await prisma.CartItems.delete({ where: { Cartid: existing.Cartid } });
+        await prisma.cartItems.delete({ where: { Cartid: existing.Cartid } });
       }
     } else {
       // Check product and stock
@@ -227,7 +240,7 @@ export async function setCartLineQuantity(
 
       // Update or create cart item
       if (existing) {
-        await prisma.CartItems.update({
+        await prisma.cartItems.update({
           where: { Cartid: existing.Cartid },
           data: { quantity: soLuong, updatedAt: new Date() }
         });
@@ -235,17 +248,26 @@ export async function setCartLineQuantity(
         // If item doesn't exist and soLuong > 0, create it
         const product = await prisma.sanpham.findUnique({
           where: { MaSP: maSP },
-          select: { TenSP: true, GiaBan: true }
+          select: { 
+            TenSP: true, 
+            GiaBan: true,
+            sanpham_anh: {
+              where: { AnhChinh: 1 },
+              select: { DuongDanAnh: true },
+              take: 1
+            }
+          }
         });
         if (product) {
-          await prisma.CartItems.create({
+          const productImage = product.sanpham_anh?.[0]?.DuongDanAnh || '';
+          await prisma.cartItems.create({
             data: {
               MaKH: maKH,
               MaCH: DEFAULT_STORE,
               MaSp: maSP,
               name: product.TenSP,
               price: product.GiaBan || 0,
-              image: '',
+              image: productImage,
               quantity: soLuong,
               createdAt: new Date(),
               updatedAt: new Date()
@@ -272,7 +294,7 @@ export async function clearCartForAccount(maTaiKhoan: string): Promise<{ ok: tru
     return { ok: false, message: 'Chỉ tài khoản khách hàng mới dùng giỏ hàng' };
   }
 
-  await prisma.CartItems.deleteMany({ where: { MaKH: maKH } });
+  await prisma.cartItems.deleteMany({ where: { MaKH: maKH } });
   return { ok: true };
 }
 
@@ -285,7 +307,7 @@ export async function removeCartLine(
     return { ok: false, message: 'Chỉ tài khoản khách hàng mới dùng giỏ hàng' };
   }
 
-  await prisma.CartItems.deleteMany({ where: { MaKH: maKH, MaSp: maSP } });
+  await prisma.cartItems.deleteMany({ where: { MaKH: maKH, MaSp: maSP } });
 
   const cart = await getCartForAccount(maTaiKhoan);
   if (!cart) {

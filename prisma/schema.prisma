@@ -8,15 +8,17 @@ datasource db {
 }
 
 model chitietdonhang {
-  MaSP     String   @db.VarChar(10)
-  MaDH     String   @db.VarChar(10)
-  SoLuong  Int?
-  TongTien Decimal? @db.Decimal(15, 2)
+  MaSP     String   @db.VarChar(20)
+  MaDH     String   @map("MaHD") @db.VarChar(20)
+  SoLuong  Int
+  DonGia   Decimal  @db.Decimal(15, 2)
+  TongTien Decimal  @map("ThanhTien") @db.Decimal(15, 2)
   sanpham  sanpham  @relation("CTDH_SanPham", fields: [MaSP], references: [MaSP], onUpdate: NoAction, map: "chitietdonhang_ibfk_1")
   donhang  donhang  @relation("CTDH_DonHang", fields: [MaDH], references: [MaDH], onUpdate: NoAction, map: "chitietdonhang_ibfk_2")
 
   @@id([MaSP, MaDH])
   @@index([MaDH], map: "MaDH")
+  @@map("chitiethoadon")
 }
 
 model chitietphieuchuyenhang {
@@ -76,6 +78,8 @@ model chuyenhangthanhpham {
   TrangThai      Int?      @default(0)
   GhiChu         String?   @db.Text
   donhang        donhang   @relation("CHT_DonHang", fields: [MaHD], references: [MaDH], onDelete: Cascade, map: "FK_GiaoHang_HoaDon")
+
+  @@map("chuyenhanhthanhpham")
 }
 
 model cuahang {
@@ -92,12 +96,11 @@ model cuahang {
 }
 
 model donhang {
-  MaDH                String               @id @db.VarChar(20)
-  MaCH                String?              @db.VarChar(20)
+  MaDH                String               @id @map("MaHD") @db.VarChar(20)
+  MaCH                String?              @map("MaCuahang") @db.VarChar(20)
   MaNV                String?              @db.VarChar(20)
-  MaKH                String?              @db.VarChar(20)
+  MaKH                String?              @map("Makh") @db.VarChar(20)
   Makmkh              String?              @db.VarChar(20)
-  MaTaiKhoan          String?              @db.VarChar(20)
   order_code          String?              @unique @db.VarChar(50)
   order_type          Int?                 @default(1)
   TongTien            Decimal?             @default(0.00) @db.Decimal(15, 2)
@@ -115,14 +118,15 @@ model donhang {
   khuyenmaikhachhang  khuyenmaikhachhang?  @relation("HD_KMKH", fields: [Makmkh], references: [Makmkh], onDelete: NoAction, onUpdate: NoAction, map: "FK_HD_KMKH")
   khachhang           khachhang?           @relation(fields: [MaKH], references: [MaKH], onDelete: NoAction, onUpdate: NoAction, map: "FK_HD_KhachHang")
   nhanvien            nhanvien?            @relation(fields: [MaNV], references: [MaNV], onDelete: NoAction, onUpdate: NoAction, map: "FK_HD_NhanVien")
-  taikhoan            taikhoan?            @relation("HD_TaiKhoan", fields: [MaTaiKhoan], references: [MaTaiKhoan], onDelete: NoAction, onUpdate: NoAction, map: "FK_HD_TaiKhoan")
+  // taikhoan relation removed: hoadon table does not contain an account FK
   payments            payments[]
 
   @@index([MaCH], map: "FK_HD_CuaHang")
   @@index([MaNV], map: "FK_HD_NhanVien")
   @@index([MaKH], map: "FK_HD_KhachHang")
   @@index([Makmkh], map: "FK_HD_KMKH")
-  @@index([MaTaiKhoan], map: "FK_HD_TaiKhoan")
+  @@map("hoadon")
+  
   @@index([order_code], map: "order_code")
 }
 
@@ -139,7 +143,6 @@ model khachhang {
   address            address[]
   donhang            donhang[]
   khuyenmaikhachhang khuyenmaikhachhang[]
-  payments           payments[]
 
   @@index([Email], map: "Email")
 }
@@ -199,7 +202,6 @@ model nhaphanphoi {
 model payments {
   payment_id       String         @id @db.VarChar(20)
   MaHD             String         @db.VarChar(20)
-  MaKH             String?        @db.VarChar(20)
   transaction_id   String?        @db.VarChar(100)
   amount           Decimal        @db.Decimal(15, 2)
   currency         String?        @default("VND") @db.VarChar(10)
@@ -210,10 +212,8 @@ model payments {
   note             String?        @db.Text
   payment_logs     payment_logs[]
   donhang          donhang        @relation(fields: [MaHD], references: [MaDH], onDelete: Cascade, map: "FK_Payments_HoaDon")
-  khachhang        khachhang?     @relation(fields: [MaKH], references: [MaKH], onDelete: Cascade, map: "FK_Payments_KhachHang")
 
   @@index([MaHD], map: "FK_Payments_HoaDon")
-  @@index([MaKH], map: "FK_Payments_KhachHang")
 }
 
 model payment_logs {
@@ -339,7 +339,7 @@ model taikhoan {
   TenDangNhap   String          @unique(map: "TenDangNhap") @db.VarChar(50)
   MatKhau       String          @db.VarChar(255)
   TrangThai     Int?            @default(1)
-  donhang       donhang[]       @relation("HD_TaiKhoan")
+  // donhang relation removed: hoadon table has no account FK
   nhanvien      nhanvien[]      @relation("NV_TaiKhoan")
   phanquyen     phanquyen[]     @relation("PQ_TaiKhoan")
   phieunhanhang phieunhanhang[] @relation("PNH_TaiKhoan")

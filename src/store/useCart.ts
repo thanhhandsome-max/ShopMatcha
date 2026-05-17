@@ -13,6 +13,7 @@ export type CartItem = {
 
 type CartState = {
   items: CartItem[];
+  selectedItemIds: string[];
   maCH: string;
   isSyncing: boolean;
   hydrateFromServer: () => Promise<void>;
@@ -29,11 +30,24 @@ type CartState = {
   clear: (options?: { remote?: boolean }) => Promise<void>;
   totalItems: () => number;
   totalPrice: () => number;
+  toggleItemSelection: (productId: string) => void;
+  selectAllItems: () => void;
+  clearSelection: () => void;
+  selectedItems: () => CartItem[];
+  selectedTotalPrice: () => number;
   checkItemStock: (
     productId: string,
     requestedQty: number
   ) => Promise<{ success: boolean; message: string; availableStock: number }>;
 };
+
+function normalizeSelection(items: CartItem[], selectedItemIds: string[]): string[] {
+  const validIds = selectedItemIds.filter((id) =>
+    items.some((item) => item.productId === id)
+  );
+  if (validIds.length > 0) return validIds;
+  return items.map((item) => item.productId);
+}
 
 async function parseJson(res: Response): Promise<any> {
   const text = await res.text();
@@ -59,6 +73,7 @@ function mapServerItems(raw: any[]): CartItem[] {
 
 export const useCart = create<CartState>()((set, get) => ({
   items: [],
+  selectedItemIds: [],
   maCH: "CH001",
   isSyncing: false,
 
@@ -84,10 +99,14 @@ export const useCart = create<CartState>()((set, get) => ({
         set({ items: [], maCH: "CH001", isSyncing: false });
         return;
       }
-      set({
-        items: mapServerItems(data.data?.items),
-        maCH: data.data?.maCH || "CH001",
-        isSyncing: false
+      set((state) => {
+        const items = mapServerItems(data.data?.items);
+        return {
+          items,
+          selectedItemIds: normalizeSelection(items, state.selectedItemIds),
+          maCH: data.data?.maCH || "CH001",
+          isSyncing: false
+        };
       });
     } catch {
       set({ isSyncing: false });
@@ -137,7 +156,13 @@ export const useCart = create<CartState>()((set, get) => ({
           message: data.message || "Không thể thêm vào giỏ hàng"
         };
       }
-      set({ items: mapServerItems(data.data?.items) });
+      set((state) => {
+        const items = mapServerItems(data.data?.items);
+        return {
+          items,
+          selectedItemIds: normalizeSelection(items, state.selectedItemIds)
+        };
+      });
       return {
         success: true,
         message: data.message || "Đã thêm vào giỏ hàng"
@@ -164,9 +189,21 @@ export const useCart = create<CartState>()((set, get) => ({
       );
       const data = await parseJson(res);
       if (res.ok && data.success) {
-        set({ items: mapServerItems(data.data?.items) });
+        set((state) => {
+          const items = mapServerItems(data.data?.items);
+          return {
+            items,
+            selectedItemIds: normalizeSelection(items, state.selectedItemIds)
+          };
+        });
       } else {
-        set({ items: get().items.filter((x) => x.productId !== productId) });
+        set((state) => {
+          const items = state.items.filter((x) => x.productId !== productId);
+          return {
+            items,
+            selectedItemIds: normalizeSelection(items, state.selectedItemIds)
+          };
+        });
       }
     } catch {
       set({ items: get().items.filter((x) => x.productId !== productId) });
@@ -177,13 +214,17 @@ export const useCart = create<CartState>()((set, get) => ({
     const token =
       typeof window !== "undefined" ? localStorage.getItem("htdcha-token") : null;
     if (!token) {
-      set({
-        items:
+      set((state) => {
+        const items =
           quantity <= 0
-            ? get().items.filter((x) => x.productId !== productId)
-            : get().items.map((x) =>
+            ? state.items.filter((x) => x.productId !== productId)
+            : state.items.map((x) =>
                 x.productId === productId ? { ...x, quantity } : x
-              )
+              );
+        return {
+          items,
+          selectedItemIds: normalizeSelection(items, state.selectedItemIds)
+        };
       });
       return { success: true };
     }
@@ -199,7 +240,13 @@ export const useCart = create<CartState>()((set, get) => ({
       );
       const data = await parseJson(res);
       if (res.ok && data.success) {
-        set({ items: mapServerItems(data.data?.items) });
+        set((state) => {
+          const items = mapServerItems(data.data?.items);
+          return {
+            items,
+            selectedItemIds: normalizeSelection(items, state.selectedItemIds)
+          };
+        });
         return { success: true };
       }
       return {
@@ -224,8 +271,33 @@ export const useCart = create<CartState>()((set, get) => ({
         /* ignore */
       }
     }
-    set({ items: [] });
+    set({ items: [], selectedItemIds: [] });
   },
+
+  toggleItemSelection: (productId) => {
+    set((state) => {
+      const selectedItemIds = state.selectedItemIds.includes(productId)
+        ? state.selectedItemIds.filter((id) => id !== productId)
+        : [...state.selectedItemIds, productId];
+      return { selectedItemIds };
+    });
+  },
+
+  selectAllItems: () => {
+    set((state) => ({
+      selectedItemIds: state.items.map((item) => item.productId)
+    }));
+  },
+
+  clearSelection: () => set({ selectedItemIds: [] }),
+
+  selectedItems: () =>
+    get().items.filter((item) => get().selectedItemIds.includes(item.productId)),
+
+  selectedTotalPrice: () =>
+    get()
+      .items.filter((item) => get().selectedItemIds.includes(item.productId))
+      .reduce((sum, item) => sum + item.price * item.quantity, 0),
 
   totalItems: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
 

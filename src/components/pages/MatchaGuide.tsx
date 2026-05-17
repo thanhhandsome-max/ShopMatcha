@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import MatchaAssistantPanel from "@/components/shop/MatchaAssistantPanel";
 
 const fieldImage = "https://mgx-backend-cdn.metadl.com/generate/images/618746/2026-04-09/cc543ae9-1f31-403d-b2bf-8b80c519d337.png";
 const matchaPowder = "https://mgx-backend-cdn.metadl.com/generate/images/618746/2026-04-09/c28b23f3-9da1-4efb-982d-89d459bd2427.png";
@@ -108,6 +109,8 @@ export default function MatchaGuide() {
           </article>
         ))}
       </div>
+
+      <MatchaAssistantPanel />
 
       <Footer />
     </div>
